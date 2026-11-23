@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aprendizaje de Machine Learning</title>
+<meta name="description" content="Lecciones interactivas de machine learning para las ciencias sociales y la gestión pública: del problema a la fórmula.">
+<meta property="og:title" content="Aprendizaje de Machine Learning">
+<meta property="og:description" content="Lecciones interactivas de machine learning para las ciencias sociales y la gestión pública: del problema a la fórmula.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 3 Q8 16 15 3' fill='none' stroke='%234338ca' stroke-width='2.2'/%3E%3Ccircle cx='11' cy='8.6' r='2' fill='%23d97706'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="recursos/estilos.css">
+<script>try{var t=localStorage.getItem('aprendizaje-ml-tema');if(t)document.documentElement.setAttribute('data-tema',t);}catch(e){}</script>
+</head>
+<body>
+
+<!-- ============================================================
+     PROCESO 1: Portada del curso
+     Insumo:    nombre del curso, método de estudio
+     Resultado: una presentación breve y la promesa de cada lección
+     ============================================================ -->
+<main class="contenedor">
+  <div class="portada">
+    <p class="portada__etiqueta">Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública · PUCP 2026</p>
+    <h1>Aprendizaje de Machine Learning</h1>
+    <p class="portada__sub">Lecciones interactivas del curso «Introducción a Machine Learning para Ciencias Sociales». Cada lección parte de un problema real y llega, al final, a la fórmula de la clase.</p>
+    <div class="portada__datos">
+      <span>Prof. Pavel Coronado Castellanos</span>
+      <span>Notas de estudio de Diego Sime, con Claude Code</span>
+    </div>
+  </div>
+
+  <aside class="caja caja--autoria" aria-labelledby="titulo-autoria">
+    <p class="caja__titulo" id="titulo-autoria">Autoría y fuentes</p>
+    <p>Estas lecciones se basan en el material del <strong>prof. Pavel Coronado Castellanos</strong> para el curso «Introducción a Machine Learning para Ciencias Sociales» (Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública, Facultad de Ciencias Sociales, PUCP, 2026): sus diapositivas, su manual <em>Machine Learning para las Ciencias Sociales</em> (Departamento de Economía, PUCP, 2026) y el trabajo del QLAB, PUCP. Asistente del curso: Anderson Águila.</p>
+    <p>Cada lección cita las lecturas del curso y la autoría original de cada ejemplo (Deisenroth, Faisal y Ong; James, Witten, Hastie, Tibshirani y Taylor; Breiman; Athey e Imbens; entre otros) en su sección «Créditos y autorías».</p>
+    <p>Texto, laboratorios y código: <strong>Diego Sime con Claude Code</strong>, como material de estudio. Los errores son nuestros, no del profesor ni de los autores citados. Las diapositivas y lecturas pertenecen a sus autores y no se reproducen aquí.</p>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">El método de estas lecciones</p>
+    <ul>
+      <li><strong>Del problema a la fórmula.</strong> Primero una pregunta concreta (¿cómo elige ChatGPT su próxima palabra?), después la idea y al final la notación.</li>
+      <li><strong>Laboratorios.</strong> Gráficos que mueves con el mouse o con el dedo para ver el efecto de cada idea.</li>
+      <li><strong>Retos.</strong> Una pregunta antes de seguir. Si fallas, recibes una pista.</li>
+      <li><strong>Cajas «Recuerda»</strong> y una ficha final para imprimir.</li>
+      <li><strong>Cada símbolo, explicado:</strong> cómo se lee y qué significa, para quien no viene de las ciencias exactas.</li>
+    </ul>
+  </aside>
+
+<!-- ============================================================
+     PROCESO 2: Lecciones
+     Insumo:    el cronograma del sílabo
+     Resultado: una tarjeta por lección; las listas llevan enlace
+     Para agregar una lección: copia un <li class="leccion"> y cambia sus datos.
+     ============================================================ -->
+  <h2 style="margin-top:1.6em">Lecciones</h2>
+  <ol class="lecciones">
+    <li class="leccion leccion--lista">
+      <div class="leccion__fecha"><b>Lección 1</b>22 de noviembre</div>
+      <div>
+        <h3><a href="leccion-01.html">Cómo aprende una máquina</a> <span class="estado estado--lista">Lista</span></h3>
+        <p>Medir el error, bajarlo con el descenso de gradiente y razonar con probabilidades. Repaso de cálculo, optimización y probabilidad (diapositivas ML1). 13 laboratorios y 15 retos.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Lección 2</b>25 y 28 de noviembre</div>
+      <div>
+        <h3>Modelos lineales y sobreajuste <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Capacidad de un modelo, subajuste y sobreajuste, regularización y validación cruzada. Práctica en Python con el descenso de gradiente.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Lección 3</b>29 de noviembre</div>
+      <div>
+        <h3>Métodos de remuestreo <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Validación cruzada y <em>bootstrap</em>.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Lección 4</b>2 al 6 de diciembre</div>
+      <div>
+        <h3>Regresiones Ridge y Lasso <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Regularización: cómo castigar los parámetros grandes para predecir mejor.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Lección 5</b>Diciembre</div>
+      <div>
+        <h3>Árboles, <em>bagging</em> y <em>boosting</em> <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Modelos no lineales para clasificar y predecir.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Lección 6</b>Diciembre</div>
+      <div>
+        <h3>Redes neuronales y aprendizaje no supervisado <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Redes multicapa, convolucionales y recurrentes; K-means y PCA.</p>
+      </div>
+    </li>
+  </ol>
+  <p class="nota-pie">Fechas según el cronograma del sílabo. Pueden cambiar.</p>
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <p>Material de estudio basado en las clases del <strong>prof. Pavel Coronado Castellanos</strong> (PUCP, 2026). Elaborado por Diego Sime con Claude Code. Las diapositivas y lecturas pertenecen a sus autores; aquí solo se citan. Texto en lenguaje simple, según el estándar ASD-STE100 adaptado al español.</p>
+    <p><a href="https://diegosimemirror.github.io/">Portafolio de Diego Sime</a> · <a href="https://github.com/diegosimemirror/aprendizaje_ML">Código en GitHub</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

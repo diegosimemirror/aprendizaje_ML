@@ -1,0 +1,389 @@
+/* ============================================================
+   estilos.css: el aspecto de todas las páginas del curso.
+   Lo cambias aquí y cambia en todas las lecciones.
+
+   Idea del diseño: texto cómodo para leer (letra con serifa) y
+   cajas de colores que dicen qué tipo de contenido tienes delante:
+     - Reto (violeta): una pregunta para responder antes de seguir.
+     - Recuerda (ámbar): lo que debes guardar en la memoria.
+     - La fórmula (azul): la notación, símbolo por símbolo.
+     - Puente con la filosofía (verde): una conexión opcional.
+     - En la clase (gris): dónde está el tema en las diapositivas.
+   ============================================================ */
+
+/* Tipografías: las mismas del portafolio (diegosimemirror.github.io). */
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap");
+
+
+/* ============================================================
+   PROCESO 1: Parámetros de color, letra y medidas
+   Insumo:    tus preferencias
+   Resultado: variables que usa el resto del archivo y el JavaScript
+              de los gráficos (por eso los gráficos cambian con el modo oscuro)
+   ============================================================ */
+:root {
+  --papel: #fbfaf7;
+  --papel-2: #ffffff;
+  --tinta: #1b1b1f;
+  --tinta-suave: #5d5d66;
+  --linea: #e2e0da;
+
+  --acento: #4338ca;          /* índigo: enlaces y botones */
+  --acento-suave: #eef0ff;
+
+  /* Cajas */
+  --reto: #6d28d9;      --reto-fondo: #f5f0ff;
+  --recuerda: #b45309;  --recuerda-fondo: #fff7e6;
+  --formula: #1d4ed8;   --formula-fondo: #f0f5ff;
+  --filosofia: #047857; --filosofia-fondo: #ecfdf5;
+  --clase: #52525b;     --clase-fondo: #f4f4f5;
+
+  /* Gráficos (el JavaScript lee estas variables) */
+  --g-eje: #9a9aa3;
+  --g-rejilla: #ecebe6;
+  --g-serie1: #4338ca;   /* índigo */
+  --g-serie2: #d97706;   /* ámbar */
+  --g-serie3: #059669;   /* verde */
+  --g-serie4: #dc2626;   /* rojo: error, alerta */
+  --g-relleno: rgba(67, 56, 202, 0.12);
+  --g-mapa-bajo: #eef2ff;    /* curvas de nivel: valores bajos */
+  --g-mapa-alto: #fde68a;    /* curvas de nivel: valores altos */
+
+  --bien: #047857;  --bien-fondo: #e7f8ef;
+  --mal: #b91c1c;   --mal-fondo: #fdecec;
+
+  --letra-titulos: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --letra-texto: "Newsreader", Georgia, "Times New Roman", serif;
+
+  --texto: 1.25rem;
+  --texto-ui: 0.98rem;
+  --ancho-lectura: 46rem;
+  --ancho-ancho: 64rem;
+  --margen: clamp(16px, 4vw, 40px);
+  --radio: 14px;
+  color-scheme: light;
+}
+
+/* Modo oscuro: automático según el sistema, salvo que la página fije data-tema. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --papel: #121216; --papel-2: #1a1a20; --tinta: #ececf1; --tinta-suave: #a5a5b0; --linea: #2e2e36;
+    --acento: #a5b4fc; --acento-suave: #23233a;
+    --reto: #c4b5fd; --reto-fondo: #221a35;
+    --recuerda: #fbbf24; --recuerda-fondo: #2a2112;
+    --formula: #93c5fd; --formula-fondo: #15203a;
+    --filosofia: #6ee7b7; --filosofia-fondo: #10261f;
+    --clase: #c4c4cc; --clase-fondo: #1f1f25;
+    --g-eje: #6b6b75; --g-rejilla: #26262d;
+    --g-serie1: #a5b4fc; --g-serie2: #fbbf24; --g-serie3: #34d399; --g-serie4: #f87171;
+    --g-relleno: rgba(165, 180, 252, 0.16);
+    --g-mapa-bajo: #1c1f3a; --g-mapa-alto: #5b4513;
+    --bien: #6ee7b7; --bien-fondo: #0f2a20; --mal: #fca5a5; --mal-fondo: #2e1414;
+    color-scheme: dark;
+  }
+}
+:root[data-tema="oscuro"] {
+  --papel: #121216; --papel-2: #1a1a20; --tinta: #ececf1; --tinta-suave: #a5a5b0; --linea: #2e2e36;
+  --acento: #a5b4fc; --acento-suave: #23233a;
+  --reto: #c4b5fd; --reto-fondo: #221a35;
+  --recuerda: #fbbf24; --recuerda-fondo: #2a2112;
+  --formula: #93c5fd; --formula-fondo: #15203a;
+  --filosofia: #6ee7b7; --filosofia-fondo: #10261f;
+  --clase: #c4c4cc; --clase-fondo: #1f1f25;
+  --g-eje: #6b6b75; --g-rejilla: #26262d;
+  --g-serie1: #a5b4fc; --g-serie2: #fbbf24; --g-serie3: #34d399; --g-serie4: #f87171;
+  --g-relleno: rgba(165, 180, 252, 0.16);
+  --g-mapa-bajo: #1c1f3a; --g-mapa-alto: #5b4513;
+  --bien: #6ee7b7; --bien-fondo: #0f2a20; --mal: #fca5a5; --mal-fondo: #2e1414;
+  color-scheme: dark;
+}
+
+
+/* ============================================================
+   PROCESO 2: Base de la página
+   Insumo:    el HTML sin estilo
+   Resultado: fondo, letra y ancho de lectura cómodos en computadora y celular
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--letra-texto);
+  font-size: var(--texto);
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+img, svg, canvas { max-width: 100%; }
+a { color: var(--acento); text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+strong { font-weight: 600; }
+.contenedor { max-width: var(--ancho-lectura); margin: 0 auto; padding: 0 var(--margen); }
+.ancho { max-width: var(--ancho-ancho); }
+
+h1, h2, h3, h4 { font-family: var(--letra-titulos); line-height: 1.2; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 5vw, 3.1rem); margin: 0.2em 0 0.3em; font-weight: 700; }
+h2 { font-size: clamp(1.6rem, 3.4vw, 2.2rem); margin: 0 0 0.4em; font-weight: 700; }
+h3 { font-size: 1.3rem; margin: 2.2em 0 0.5em; font-weight: 600; }
+h4 { font-size: 1.05rem; margin: 1.4em 0 0.4em; font-weight: 600; }
+p { margin: 0 0 0.9em; }
+ul, ol { padding-left: 1.3em; margin: 0 0 1em; }
+li { margin-bottom: 0.35em; }
+.suave { color: var(--tinta-suave); }
+.ui { font-family: var(--letra-titulos); font-size: var(--texto-ui); }
+.nota-pie { font-family: var(--letra-titulos); font-size: 0.85rem; color: var(--tinta-suave); }
+
+
+/* ============================================================
+   PROCESO 3: Barra superior fija y avance de lectura
+   Insumo:    el título del curso y el índice de partes
+   Resultado: una barra delgada que muestra cuánto has leído y cuántos retos resolviste
+   ============================================================ */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--papel) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--linea);
+  font-family: var(--letra-titulos);
+  font-size: 0.9rem;
+}
+.barra__fila { display: flex; align-items: center; gap: 14px; max-width: var(--ancho-ancho); margin: 0 auto; padding: 10px var(--margen); }
+.barra__curso { font-weight: 600; color: var(--tinta); text-decoration: none; white-space: nowrap; }
+.barra__partes { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; flex: 1; }
+.barra__partes::-webkit-scrollbar { display: none; }
+.barra__partes a { color: var(--tinta-suave); text-decoration: none; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+.barra__partes a:hover, .barra__partes a.activa { background: var(--acento-suave); color: var(--acento); }
+.barra__retos { white-space: nowrap; color: var(--reto); font-weight: 600; }
+.barra__tema { border: 1px solid var(--linea); background: transparent; color: var(--tinta-suave); border-radius: 999px; padding: 3px 9px; cursor: pointer; font: inherit; }
+.barra__avance { height: 3px; background: var(--acento); width: 0; transition: width 0.1s linear; }
+@media (max-width: 640px) { .barra__curso { display: none; } }
+
+
+/* ============================================================
+   PROCESO 4: Portada de la lección
+   Insumo:    título, subtítulo y datos de la clase
+   Resultado: una apertura clara, con la pregunta que guía toda la lección
+   ============================================================ */
+.portada { padding: clamp(40px, 8vw, 88px) 0 24px; }
+.portada__etiqueta { font-family: var(--letra-titulos); font-size: 0.9rem; font-weight: 600; color: var(--acento); text-transform: uppercase; letter-spacing: 0.08em; }
+.portada__sub { font-size: 1.35rem; color: var(--tinta-suave); max-width: 40rem; }
+.portada__datos { font-family: var(--letra-titulos); font-size: 0.9rem; color: var(--tinta-suave); display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 18px; }
+
+.mapa { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 22px 0 8px; }
+.mapa a { display: block; text-decoration: none; color: var(--tinta); background: var(--papel-2); border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px 16px; font-family: var(--letra-titulos); font-size: 0.95rem; transition: transform 0.15s, border-color 0.15s; }
+.mapa a:hover { transform: translateY(-2px); border-color: var(--acento); }
+.mapa b { display: block; color: var(--acento); font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+
+
+/* ============================================================
+   PROCESO 5: Partes de la lección
+   Insumo:    cada <section class="parte">
+   Resultado: separación clara entre partes, con número grande y pregunta guía
+   ============================================================ */
+.parte { padding: clamp(48px, 7vw, 84px) 0 8px; border-top: 1px solid var(--linea); }
+.parte__num { font-family: var(--letra-titulos); font-weight: 700; color: var(--acento); font-size: 0.95rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.parte__pregunta { font-size: 1.4rem; font-style: italic; color: var(--tinta-suave); margin-bottom: 1.2em; }
+
+
+/* ============================================================
+   PROCESO 6: Cajas de contenido
+   Insumo:    <aside class="caja caja--tipo">
+   Resultado: cada tipo de caja con su color, su etiqueta y su icono de texto
+   ============================================================ */
+.caja { border-radius: var(--radio); padding: 18px 20px 14px; margin: 1.6em 0; border: 1px solid transparent; position: relative; }
+.caja__titulo { font-family: var(--letra-titulos); font-weight: 700; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+.caja > :last-child { margin-bottom: 0.4em; }
+.caja ul { margin-bottom: 0.4em; }
+
+.caja--recuerda { background: var(--recuerda-fondo); border-color: color-mix(in srgb, var(--recuerda) 35%, transparent); }
+.caja--recuerda .caja__titulo { color: var(--recuerda); }
+.caja--recuerda .caja__titulo::before { content: "★"; }
+
+.caja--formula { background: var(--formula-fondo); border-color: color-mix(in srgb, var(--formula) 30%, transparent); }
+.caja--formula .caja__titulo { color: var(--formula); }
+.caja--formula .caja__titulo::before { content: "∑"; font-size: 1.1em; }
+
+.caja--filosofia { background: var(--filosofia-fondo); border-color: color-mix(in srgb, var(--filosofia) 30%, transparent); }
+.caja--filosofia .caja__titulo { color: var(--filosofia); }
+.caja--filosofia .caja__titulo::before { content: "◆"; }
+
+/* Autoría: visible desde el inicio de cada página, con borde marcado. */
+.caja--autoria { background: var(--papel-2); border: 2px solid var(--acento); font-size: 1.05rem; }
+.caja--autoria .caja__titulo { color: var(--acento); }
+.caja--autoria .caja__titulo::before { content: "©"; }
+.caja--autoria p { margin-bottom: 0.6em; }
+
+.caja--clase { background: var(--clase-fondo); font-family: var(--letra-titulos); font-size: 0.92rem; padding: 12px 16px 8px; }
+.caja--clase .caja__titulo { color: var(--clase); margin-bottom: 4px; }
+.caja--clase .caja__titulo::before { content: "▤"; }
+
+.caja--reto { background: var(--reto-fondo); border-color: color-mix(in srgb, var(--reto) 35%, transparent); }
+.caja--reto .caja__titulo { color: var(--reto); }
+.caja--reto .caja__titulo::before { content: "?"; display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--reto); color: var(--reto-fondo); font-size: 0.8rem; }
+.caja--reto.resuelto .caja__titulo::after { content: "✓ resuelto"; margin-left: auto; color: var(--bien); text-transform: none; letter-spacing: 0; }
+
+/* Lectura de fórmulas: "léela así" y la tabla de símbolos */
+.lee { font-style: italic; margin-top: 0.4em; }
+.lee::before { content: "Léela así: "; font-style: normal; font-weight: 600; font-family: var(--letra-titulos); font-size: 0.9rem; color: var(--formula); }
+.formula-grande { overflow-x: auto; overflow-y: hidden; padding: 6px 0; font-size: 1.12rem; }
+table.simbolos { width: 100%; border-collapse: collapse; font-size: 1rem; margin: 10px 0 6px; }
+table.simbolos th { font-family: var(--letra-titulos); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--tinta-suave); text-align: left; font-weight: 600; border-bottom: 1px solid var(--linea); padding: 6px 8px; }
+table.simbolos td { border-bottom: 1px solid var(--linea); padding: 7px 8px; vertical-align: top; }
+table.simbolos td:first-child { white-space: nowrap; text-align: center; width: 4.5rem; }
+.tabla-desliza { overflow-x: auto; }
+@media (max-width: 560px) {
+  table.simbolos { font-size: 0.95rem; }
+  .tabla-desliza table.simbolos { min-width: 500px; }
+  table.simbolos td, table.simbolos th { padding: 6px 5px; }
+}
+
+
+/* ============================================================
+   PROCESO 7: Interacciones (laboratorios)
+   Insumo:    <figure class="lab">, con lienzo, controles y lectura de datos
+   Resultado: un recuadro limpio donde mueves controles y ves el efecto al instante
+   ============================================================ */
+.lab { background: var(--papel-2); border: 1px solid var(--linea); border-radius: var(--radio); padding: 16px; margin: 1.6em 0; font-family: var(--letra-titulos); font-size: var(--texto-ui); box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+.lab__titulo { font-weight: 700; margin: 0 0 2px; font-size: 1rem; }
+.lab__guia { color: var(--tinta-suave); margin: 0 0 12px; font-size: 0.92rem; }
+.lab canvas { display: block; width: 100%; border-radius: 8px; touch-action: none; }
+.lab__controles { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-top: 12px; }
+.lab__control { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lab__control label { color: var(--tinta-suave); }
+.lab__control output { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3.2em; }
+.lab input[type="range"] { accent-color: var(--acento); width: min(220px, 52vw); }
+.lab__lectura { margin-top: 12px; padding: 10px 12px; background: var(--papel); border-radius: 8px; font-variant-numeric: tabular-nums; line-height: 1.5; }
+.lab__lectura b { font-weight: 700; }
+/* Laboratorio ancho: sale de la columna de texto en pantallas grandes (gráficos lado a lado). */
+.lab--ancho { --ancho-lab: min(62rem, calc(100vw - 2 * var(--margen))); width: var(--ancho-lab); margin-left: calc(50% - var(--ancho-lab) / 2); }
+.lab__dos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lab__dos--mapa { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+@media (max-width: 720px) { .lab__dos { grid-template-columns: 1fr; } }
+.leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.85rem; color: var(--tinta-suave); margin-top: 8px; }
+.leyenda span::before { content: ""; display: inline-block; width: 12px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 6px; vertical-align: middle; }
+
+.boton { font: inherit; font-weight: 600; border: 1px solid var(--acento); background: var(--acento); color: var(--papel-2); padding: 7px 14px; border-radius: 999px; cursor: pointer; transition: filter 0.15s, transform 0.1s; }
+.boton:hover { filter: brightness(1.08); }
+.boton:active { transform: scale(0.97); }
+.boton--hueco { background: transparent; color: var(--acento); }
+.boton[aria-pressed="true"] { background: var(--acento); color: var(--papel-2); }
+.boton:focus-visible, .opcion:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--acento) 45%, transparent); outline-offset: 2px; }
+
+
+/* ============================================================
+   PROCESO 8: Retos de opción múltiple
+   Insumo:    botones .opcion con data-correcta="si"
+   Resultado: al hacer clic, la opción se pinta de verde o rojo y aparece la explicación
+   ============================================================ */
+.opciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; font-family: var(--letra-titulos); font-size: var(--texto-ui); }
+.opcion { font: inherit; border: 1.5px solid color-mix(in srgb, var(--reto) 45%, transparent); background: var(--papel-2); color: var(--tinta); padding: 8px 14px; border-radius: 10px; cursor: pointer; text-align: left; transition: background 0.15s, border-color 0.15s; }
+.opcion:hover { border-color: var(--reto); }
+.opcion.correcta { background: var(--bien-fondo); border-color: var(--bien); color: var(--bien); font-weight: 600; }
+.opcion.incorrecta { background: var(--mal-fondo); border-color: var(--mal); color: var(--mal); text-decoration: line-through; }
+.respuesta { display: none; border-left: 3px solid var(--reto); padding: 4px 0 4px 14px; margin-top: 10px; }
+.respuesta.visible { display: block; animation: aparecer 0.25s ease-out; }
+.respuesta--pendiente { color: var(--tinta-suave); font-style: italic; }
+.respuesta.pista-reto { border-left-color: var(--mal); color: var(--tinta-suave); font-size: 1.02rem; }
+@keyframes aparecer { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* Clasificador de preguntas (parte 5) */
+.clasifica { list-style: none; padding: 0; margin: 12px 0; }
+.clasifica li { background: var(--papel-2); border: 1px solid var(--linea); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.clasifica .opciones { margin: 6px 0 0; }
+.clasifica .respuesta { font-size: 1rem; }
+
+
+/* ============================================================
+   PROCESO 9: Tablas de datos y comparación
+   Insumo:    <table class="datos">
+   Resultado: tablas legibles, con números alineados
+   ============================================================ */
+table.datos { width: 100%; border-collapse: collapse; font-family: var(--letra-titulos); font-size: 0.92rem; margin: 10px 0; }
+table.datos th, table.datos td { padding: 7px 9px; border-bottom: 1px solid var(--linea); text-align: left; vertical-align: top; }
+table.datos th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--tinta-suave); font-weight: 600; }
+table.datos td.num, table.datos th.num { text-align: right; font-variant-numeric: tabular-nums; }
+#d2-tabla th { text-transform: none; font-size: 0.85rem; }
+table.datos tr.destacada td { background: var(--acento-suave); font-weight: 600; }
+.barrita { display: inline-block; height: 9px; border-radius: 4px; background: var(--g-serie1); vertical-align: middle; margin-right: 6px; }
+
+/* Tabla de los dos dados (parte 3) */
+.dados-tabla { border-collapse: collapse; font-family: var(--letra-titulos); font-size: 0.85rem; margin: 4px auto 0; }
+.dados-tabla th, .dados-tabla td { width: 2.6em; height: 2.2em; text-align: center; border: 1px solid var(--linea); padding: 0; }
+.dados-tabla th { color: var(--tinta-suave); font-weight: 600; background: var(--papel); }
+.dados-tabla th.columna { cursor: pointer; color: var(--acento); }
+.dados-tabla td.lleno { background: var(--acento-suave); }
+.dados-tabla .activa { outline: 2px solid var(--acento); outline-offset: -2px; background: color-mix(in srgb, var(--acento) 22%, var(--papel-2)); font-weight: 700; }
+
+/* Caras del dado (parte 3) */
+.caras { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.caras span.etq { min-width: 5.5em; color: var(--tinta-suave); }
+.cara { font: inherit; width: 40px; height: 40px; border-radius: 9px; border: 1.5px solid var(--linea); background: var(--papel); color: var(--tinta); cursor: pointer; font-weight: 700; font-size: 1.05rem; }
+.cara[aria-pressed="true"] { background: var(--g-serie1); border-color: var(--g-serie1); color: var(--papel-2); }
+.caras--b .cara[aria-pressed="true"] { background: var(--g-serie2); border-color: var(--g-serie2); }
+
+/* Comparación de dos columnas (parte 5) */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 1.2em 0; }
+.duo > div { background: var(--papel-2); border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px 16px; font-size: 1.05rem; }
+.duo h4 { margin-top: 0; }
+@media (max-width: 640px) { .duo { grid-template-columns: 1fr; } }
+
+/* Demostración de GPT (parte 0) */
+.frase { font-size: 1.35rem; margin: 6px 0 10px; font-family: var(--letra-texto); }
+.hueco { display: inline-block; min-width: 5.5em; border-bottom: 2px dashed var(--reto); color: var(--reto); text-align: center; font-weight: 600; }
+.barras-palabras { display: grid; grid-template-columns: max-content 1fr max-content; gap: 6px 10px; align-items: center; margin-top: 10px; }
+.barras-palabras .pista { height: 14px; border-radius: 7px; background: var(--g-rejilla); overflow: hidden; }
+.barras-palabras .relleno { display: block; height: 100%; background: var(--g-serie1); width: 0; transition: width 0.6s cubic-bezier(.2,.8,.2,1); }
+.barras-palabras .elegida .relleno { background: var(--g-serie2); }
+.generadas { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.generadas span { background: var(--acento-suave); color: var(--acento); border-radius: 999px; padding: 2px 10px; font-size: 0.9rem; }
+
+
+/* ============================================================
+   PROCESO 10: Ficha de repaso, lecturas y pie
+   Insumo:    las cajas «Recuerda» copiadas por el JavaScript
+   Resultado: una hoja de repaso imprimible al final de la lección
+   ============================================================ */
+.ficha { columns: 2 300px; column-gap: 18px; }
+.ficha .caja { break-inside: avoid; margin: 0 0 14px; }
+.ficha .caja__origen { font-family: var(--letra-titulos); font-size: 0.78rem; color: var(--tinta-suave); margin: -4px 0 6px; }
+.lecturas li { margin-bottom: 0.7em; }
+.pie { border-top: 1px solid var(--linea); margin-top: 64px; padding: 28px 0 48px; font-family: var(--letra-titulos); font-size: 0.88rem; color: var(--tinta-suave); }
+
+/* Tarjetas de lecciones (portada del curso) */
+.lecciones { list-style: none; padding: 0; display: grid; gap: 12px; }
+.leccion { display: grid; grid-template-columns: 6.5rem 1fr; gap: 14px; background: var(--papel-2); border: 1px solid var(--linea); border-radius: var(--radio); padding: 16px 18px; }
+.leccion__fecha { font-family: var(--letra-titulos); font-size: 0.85rem; color: var(--tinta-suave); }
+.leccion__fecha b { display: block; font-size: 1.05rem; color: var(--tinta); }
+.leccion h3 { margin: 0 0 4px; font-size: 1.12rem; }
+.leccion p { margin: 0; font-size: 1.02rem; color: var(--tinta-suave); }
+.leccion--lista { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-suave); }
+.estado { font-family: var(--letra-titulos); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 999px; padding: 2px 8px; margin-left: 6px; vertical-align: middle; }
+.estado--lista { background: var(--bien-fondo); color: var(--bien); }
+.estado--pronto { background: var(--clase-fondo); color: var(--clase); }
+@media (max-width: 560px) { .leccion { grid-template-columns: 1fr; gap: 4px; } }
+
+/* KaTeX: que las fórmulas largas no rompan el ancho del celular */
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.katex { font-size: 1.06em; }
+
+
+/* ============================================================
+   PROCESO 11: Impresión
+   Insumo:    la orden «Imprimir ficha»
+   Resultado: solo se imprime la ficha de repaso, sin barra ni laboratorios
+   ============================================================ */
+@media print {
+  body.imprimir-ficha > *:not(main) { display: none !important; }
+  body.imprimir-ficha main > *:not(#ficha) { display: none !important; }
+  body.imprimir-ficha #ficha { border: 0; padding-top: 0; }
+  body.imprimir-ficha #ficha .boton { display: none; }
+  .barra, .lab { display: none !important; }
+  :root { --papel: #fff; }
+  .caja { break-inside: avoid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}

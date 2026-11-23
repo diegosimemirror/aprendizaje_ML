@@ -1,0 +1,1208 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cómo aprende una máquina · Lección 1</title>
+<meta name="description" content="Lección interactiva: medir el error, bajarlo con el descenso de gradiente y razonar con probabilidades. Desde el problema hasta la fórmula.">
+<meta property="og:title" content="Cómo aprende una máquina · Lección 1">
+<meta property="og:description" content="Cálculo, optimización y probabilidad para machine learning, desde ChatGPT y Netflix hasta la fórmula.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 3 Q8 16 15 3' fill='none' stroke='%234338ca' stroke-width='2.2'/%3E%3Ccircle cx='11' cy='8.6' r='2' fill='%23d97706'/%3E%3C/svg%3E">
+
+<!-- KaTeX: dibuja las fórmulas matemáticas escritas entre \( \) y \[ \]. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+<link rel="stylesheet" href="recursos/estilos.css">
+<!-- Tema guardado (claro u oscuro): se aplica antes de dibujar la página, para evitar un parpadeo. -->
+<script>try{var t=localStorage.getItem('aprendizaje-ml-tema');if(t)document.documentElement.setAttribute('data-tema',t);}catch(e){}</script>
+<!-- Las interacciones de esta lección: gráficos, retos y ficha de repaso. -->
+<script defer src="recursos/leccion-01.js"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     PROCESO 1: Barra superior
+     Insumo:    nombre del curso, partes de la lección
+     Resultado: barra fija con el índice, el contador de retos y el avance de lectura
+     ============================================================ -->
+<header class="barra">
+  <div class="barra__fila">
+    <a class="barra__curso" href="index.html">Aprendizaje de ML</a>
+    <nav class="barra__partes" aria-label="Partes de la lección">
+      <a href="#p0">Inicio</a>
+      <a href="#p1">1 · Medir</a>
+      <a href="#p2">2 · Bajar</a>
+      <a href="#p3">3 · Incertidumbre</a>
+      <a href="#p4">4 · Muestras</a>
+      <a href="#p5">5 · Predecir o explicar</a>
+      <a href="#cierre">Cierre</a>
+      <a href="#ficha">Ficha</a>
+      <a href="#creditos">Créditos</a>
+    </nav>
+    <span class="barra__retos" id="contador-retos" title="Retos resueltos">0 retos</span>
+    <button class="barra__tema" id="boton-tema" type="button" title="Modo claro u oscuro" aria-label="Cambiar entre modo claro y oscuro">◐</button>
+  </div>
+  <div class="barra__avance" id="avance"></div>
+</header>
+
+<main>
+
+<!-- ============================================================
+     PROCESO 2: Portada y parte 0
+     Insumo:    las dos preguntas de partida (ChatGPT y Netflix)
+     Resultado: el problema que motiva la lección y el mapa de las cinco partes
+     ============================================================ -->
+<section class="contenedor" id="p0">
+  <div class="portada">
+    <p class="portada__etiqueta">Lección 1 · Machine Learning para las Ciencias Sociales</p>
+    <h1>Cómo aprende una máquina</h1>
+    <p class="portada__sub">Todo el machine learning descansa en tres herramientas: medir el error, bajar el error y razonar con incertidumbre. Esta lección parte de dos preguntas concretas y llega, al final de cada parte, a las fórmulas de la clase.</p>
+    <div class="portada__datos">
+      <span>Clase ML1: «Repaso estadístico y de optimización»</span>
+      <span>Prof. Pavel Coronado (PUCP · QLAB)</span>
+      <span>22 de noviembre de 2026</span>
+      <span>Lectura activa: 60 a 90 minutos</span>
+    </div>
+  </div>
+
+  <!-- Autoría visible desde el inicio: de quién es el material en que se basa la lección. -->
+  <aside class="caja caja--autoria" aria-labelledby="titulo-autoria">
+    <p class="caja__titulo" id="titulo-autoria">Autoría y fuentes</p>
+    <p>Esta lección se basa en el material del <strong>prof. Pavel Coronado Castellanos</strong> para el curso «Introducción a Machine Learning para Ciencias Sociales» (Diplomatura de la Facultad de Ciencias Sociales, PUCP, 2026): sus diapositivas <em>ML1 · Repaso estadístico y de optimización</em> e <em>Intro ML</em> (Departamento de Economía y QLAB, PUCP), y su manual <em>Machine Learning para las Ciencias Sociales</em> (2026).</p>
+    <p>Los ejemplos de la clase conservan la autoría de sus fuentes originales: Deisenroth, Faisal y Ong (descenso de gradiente en dos dimensiones), Goldberger (distribución «techo»), Angrist y Pischke (salario y educación), Breiman (las dos culturas) y Mitchell (definición de aprendizaje). Las lecturas son de James, Witten, Hastie, Tibshirani y Taylor; de Deisenroth, Faisal y Ong; de Breiman; y de Athey e Imbens.</p>
+    <p>Texto, laboratorios y código: <strong>Diego Sime con Claude Code</strong>, como material de estudio. Los errores son nuestros, no del profesor ni de los autores citados. <a href="#creditos">Ver todos los créditos</a>.</p>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">Cómo usar esta página</p>
+    <p>Lee en orden. Cada parte empieza con un problema y un laboratorio. Después vienen los retos, lo que debes recordar y, al final, la fórmula con cada símbolo explicado. Los colores de las cajas te dicen qué tienes delante: <b style="color:var(--reto)">reto</b>, <b style="color:var(--recuerda)">recuerda</b>, <b style="color:var(--formula)">la fórmula</b>, <b style="color:var(--filosofia)">puente con la filosofía</b> y <b style="color:var(--clase)">en la clase</b>. Al final, la página junta todas las cajas «Recuerda» en una ficha que puedes imprimir.</p>
+  </aside>
+
+  <h2 style="margin-top:1.4em">Dos preguntas para empezar</h2>
+
+  <h3>Pregunta 1. ¿Cómo elige ChatGPT la próxima palabra?</h3>
+
+  <figure class="lab" id="demo-gpt">
+    <p class="lab__titulo">Laboratorio 0 · Completa la frase</p>
+    <p class="lab__guia">Elige la palabra que tú escribirías. Después mira qué haría un modelo de lenguaje.</p>
+    <p class="frase">«La diabetes sin control puede dañar los <span class="hueco" id="gpt-hueco">&nbsp;</span>»</p>
+    <div class="opciones" id="gpt-opciones" role="group" aria-label="Palabras posibles"></div>
+    <div class="barras-palabras" id="gpt-barras" hidden></div>
+    <div class="lab__controles" id="gpt-controles" hidden>
+      <button class="boton" type="button" id="gpt-generar">Que el modelo escriba 12 veces</button>
+    </div>
+    <div class="generadas" id="gpt-generadas" aria-live="polite"></div>
+    <p class="nota-pie" style="margin-top:10px">Probabilidades inventadas para el ejemplo. Un modelo real calcula una probabilidad para cada una de decenas de miles de piezas de palabra (tokens).</p>
+  </figure>
+
+  <p>No hay una sola respuesta correcta. Tú elegiste con tu experiencia de lector. Un modelo de lenguaje hace algo parecido, pero con números: <strong>calcula una probabilidad para cada palabra posible, dado el texto anterior</strong>. Después sortea una palabra según esas probabilidades. Por eso la misma pregunta puede recibir respuestas distintas.</p>
+  <p>Un GPT es una <strong>función</strong>: recibe un texto y entrega una lista de probabilidades. Esa función tiene miles de millones de <strong>parámetros</strong>. Un parámetro es un número ajustable, como una perilla de una consola de sonido. Al principio, las perillas tienen valores al azar y el modelo escribe disparates. El entrenamiento muestra al modelo billones de palabras de textos reales. En cada intento, el entrenamiento mide el error y mueve un poco cada perilla para reducirlo.</p>
+
+  <h3>Pregunta 2. ¿Cómo sabe Netflix qué película recomendarte?</h3>
+  <p>Netflix no conoce tus gustos con palabras. Los conoce con números. Cada persona y cada película reciben una lista corta de números: sus coordenadas en un «espacio de gustos». La nota que el sistema predice para ti es una función de esas coordenadas. El sistema aprende las coordenadas con el mismo método que GPT: compara la nota predicha con la nota real y mueve las coordenadas para reducir el error. En la parte 2 podrás mover tu propio punto en ese espacio.</p>
+
+  <h3>Las dos preguntas tienen la misma respuesta</h3>
+  <p>Las dos máquinas aprenden igual. Esta lección recorre ese método en cinco partes:</p>
+  <nav class="mapa" aria-label="Mapa de la lección">
+    <a href="#p1"><b>Parte 1</b>Medir el error: ¿qué número debe dar la máquina?</a>
+    <a href="#p2"><b>Parte 2</b>Bajar el error: ¿hacia dónde muevo cada perilla?</a>
+    <a href="#p3"><b>Parte 3</b>Razonar con incertidumbre: ¿qué cambia cuando sé algo más?</a>
+    <a href="#p4"><b>Parte 4</b>Confiar en la muestra: ¿por qué basta una parte de los datos?</a>
+    <a href="#p5"><b>Parte 5</b>Predecir o explicar: ¿machine learning o econometría?</a>
+  </nav>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 0 · Inicio">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li><strong>Aprender</strong>, para una máquina (Mitchell, 1997): un programa aprende de la experiencia E en una tarea T si su desempeño P en esa tarea mejora con E. En GPT: T = escribir la próxima palabra; E = billones de palabras de textos reales; P = qué probabilidad da el modelo a la palabra que de verdad seguía.</li>
+      <li><strong>Entrenar</strong> un modelo es buscar los valores de sus parámetros que dan el menor error.</li>
+      <li>Un modelo de lenguaje calcula <strong>P(palabra | texto anterior)</strong>: una probabilidad condicional para cada palabra posible.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>Diapositivas «Intro ML»: definición de Mitchell e historia (atención en 2014, transformer en 2017). Notas del 22-11: «el modelo de lenguaje era un modelo de la probabilidad de la siguiente palabra».</p>
+  </aside>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 3: Parte 1. Medir el error
+     Insumo:    días de hospitalización de nueve pacientes
+     Resultado: la función de pérdida, la media y la mediana como «mejor número»
+     ============================================================ -->
+<section class="parte" id="p1">
+<div class="contenedor">
+  <p class="parte__num">Parte 1</p>
+  <h2>Medir el error</h2>
+  <p class="parte__pregunta">¿Qué número debe dar la máquina cuando solo puede dar uno?</p>
+
+  <p>Empecemos con el problema más simple posible. Un hospital registra los días de hospitalización de nueve pacientes: 2, 3, 3, 4, 4, 5, 6, 8 y 25. Llega un paciente nuevo. Debes predecir sus días con <strong>un solo número</strong>. Llamemos <em>c</em> a ese número. ¿Cuál eliges?</p>
+  <p>Para comparar dos candidatos, necesitas una regla que mida el error. Esa regla se llama <strong>función de pérdida</strong>. La más usada toma cada error, lo eleva al cuadrado y promedia los resultados. Es la <strong>pérdida cuadrática</strong>.</p>
+
+  <figure class="lab" id="demo-perdida">
+    <p class="lab__titulo">Laboratorio 1 · Encuentra el mejor número</p>
+    <p class="lab__guia">Mueve <em>c</em> con el control o arrastra la línea ámbar. Las líneas rojas son los errores. La curva de abajo da la pérdida promedio para cada valor de <em>c</em>.</p>
+    <canvas id="perdida-puntos" aria-label="Los nueve pacientes sobre una recta de días y la predicción c"></canvas>
+    <canvas id="perdida-curva" style="margin-top:8px" aria-label="Curva de pérdida promedio según c"></canvas>
+    <div class="lab__controles">
+      <div class="lab__control"><label for="perdida-c">c =</label><input type="range" id="perdida-c" min="0" max="26" step="0.01" value="12"><output id="perdida-c-out" for="perdida-c">12</output><span class="suave">días</span></div>
+      <div class="lab__control" role="group" aria-label="Tipo de pérdida">
+        <button class="boton boton--hueco" type="button" data-modo="cuadratica" aria-pressed="true">Pérdida cuadrática</button>
+        <button class="boton boton--hueco" type="button" data-modo="absoluta" aria-pressed="false">Pérdida absoluta</button>
+      </div>
+      <div class="lab__control"><input type="checkbox" id="perdida-extremo" checked><label for="perdida-extremo">Incluir al paciente de 25 días</label></div>
+    </div>
+    <p class="lab__lectura" id="perdida-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="1.1">
+    <p class="caja__titulo">Reto 1.1</p>
+    <p>Con la pérdida cuadrática, ¿dónde queda el menor error?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Mira la curva de abajo: su punto más bajo no está en 4.">En la mediana: 4 días</button>
+      <button class="opcion" type="button" data-correcta>En la media: 6,67 días</button>
+      <button class="opcion" type="button" data-pista="El valor más frecuente no considera al paciente de 25 días. La curva sí lo considera.">En el valor más frecuente: 3 o 4 días</button>
+    </div>
+    <p class="respuesta">Correcto. La pérdida cuadrática castiga mucho los errores grandes: un error de 20 días pesa 400. Por eso el paciente de 25 días jala la predicción hacia arriba. El mínimo cae exactamente en la <strong>media</strong>: 60 / 9 = 6,67.</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="1.2">
+    <p class="caja__titulo">Reto 1.2</p>
+    <p>Cambia a «Pérdida absoluta». ¿Dónde queda ahora el menor error?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Cambia el tipo de pérdida en el laboratorio y mira de nuevo la curva.">Sigue en la media: 6,67 días</button>
+      <button class="opcion" type="button" data-correcta>En la mediana: 4 días</button>
+      <button class="opcion" type="button" data-pista="Un solo caso no puede atraer tanto a la pérdida absoluta.">Cerca del caso extremo: 25 días</button>
+    </div>
+    <p class="respuesta">Correcto. La pérdida absoluta castiga cada día de error por igual. El mínimo cae en la <strong>mediana</strong>: la mitad de los pacientes está por debajo y la otra mitad por encima. El caso extremo ya no jala tanto. Prueba también a quitar al paciente de 25 días: la media baja a 4,38 y la mediana no cambia. <strong>Conclusión: la regla de error que eliges decide la respuesta.</strong></p>
+  </aside>
+
+  <h3>De un número a una función</h3>
+  <p>En el machine learning real, la predicción no es un solo número. Es una <strong>función</strong> <em>f</em>: recibe los datos del caso, que llamamos <em>x</em>, y entrega una predicción, <em>f</em>(<em>x</em>). Por ejemplo, <em>x</em> puede ser la edad y el diagnóstico de un paciente, y <em>f</em>(<em>x</em>) sus días probables de hospitalización. La idea no cambia: buscamos la función <em>f</em> con la menor pérdida promedio en los datos. Ese promedio se llama <strong>pérdida empírica</strong>.</p>
+  <p>Cada tipo de tarea tiene sus pérdidas (ML1, pág. 49):</p>
+  <div class="tabla-desliza">
+  <table class="datos">
+    <thead><tr><th>Tarea</th><th>Pérdida</th><th>Qué hace en la práctica</th></tr></thead>
+    <tbody>
+      <tr><td>Regresión: predecir un número</td><td>Cuadrática: \((y-f(x))^2\)</td><td>Castiga mucho los errores grandes. Su mejor número único es la media.</td></tr>
+      <tr><td>Regresión</td><td>Absoluta: \(|y-f(x)|\)</td><td>Castiga cada unidad de error por igual. Su mejor número único es la mediana.</td></tr>
+      <tr><td>Clasificación: predecir una clase</td><td>0-1</td><td>Suma 1 por cada caso mal clasificado y 0 por cada acierto.</td></tr>
+      <tr><td>Clasificación</td><td>Bisagra (<em>hinge</em>): \(\max(0,\,1-y\,f(x))\)</td><td>Aquí <em>y</em> vale −1 o +1. Castiga también los aciertos «por poco», con poco margen.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 1 · Medir el error">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>La <strong>función de pérdida</strong> es la regla que mide el error de una predicción.</li>
+      <li>Con pérdida cuadrática, el mejor número único es la <strong>media</strong>. Con pérdida absoluta, es la <strong>mediana</strong>.</li>
+      <li><strong>Aprender = elegir la función f con la menor pérdida promedio.</strong> Por eso casi todo el machine learning es un problema de optimización.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \ell\big(f(x),\,y\big) = \big(y - f(x)\big)^2 \qquad\qquad R_{\text{emp}}(f) = \frac{1}{n}\sum_{i=1}^{n} \ell\big(f(x_i),\,y_i\big) \]</div>
+    <p class="lee">la pérdida de una predicción es el cuadrado de la diferencia entre el valor real y el valor predicho. La pérdida empírica es el promedio de esas pérdidas en los <em>n</em> casos de la muestra.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th><th>En el laboratorio</th></tr></thead>
+      <tbody>
+        <tr><td>\(\ell\)</td><td>«ele»</td><td>La función de pérdida: la regla que mide el error.</td><td>\((y-c)^2\)</td></tr>
+        <tr><td>\(y\)</td><td>«ye»</td><td>El valor real que queremos predecir.</td><td>Los días reales de un paciente</td></tr>
+        <tr><td>\(x\)</td><td>«equis»</td><td>Los datos del caso que usa la predicción.</td><td>No hay: todos reciben el mismo número</td></tr>
+        <tr><td>\(f(x)\)</td><td>«efe de equis»</td><td>La predicción del modelo para ese caso.</td><td>\(f(x)=c\) para todos</td></tr>
+        <tr><td>\(i\), \(n\)</td><td>«i», «ene»</td><td><em>i</em> numera los casos; <em>n</em> es cuántos hay.</td><td>\(n=9\) pacientes</td></tr>
+        <tr><td>\(\sum_{i=1}^{n}\)</td><td>«suma desde i igual a 1 hasta n»</td><td>Suma lo que está a la derecha, una vez por cada caso.</td><td>Suma de los 9 errores al cuadrado</td></tr>
+        <tr><td>\(\frac{1}{n}\)</td><td>«uno sobre ene»</td><td>Divide entre <em>n</em>: convierte la suma en un promedio.</td><td>Dividir entre 9</td></tr>
+        <tr><td>\(R_{\text{emp}}\)</td><td>«riesgo empírico»</td><td>La pérdida promedio en la muestra. Riesgo y pérdida esperada son sinónimos aquí.</td><td>El número de la lectura</td></tr>
+      </tbody>
+    </table></div>
+    <div class="formula-grande">\[ \mu_Y = \arg\min_{c}\; E\big[(Y-c)^2\big] \]</div>
+    <p class="lee">la media de <em>Y</em> es el número <em>c</em> que hace mínima la pérdida cuadrática esperada.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <tbody>
+        <tr><td>\(\arg\min_c\)</td><td>«el argumento que minimiza, sobre c»</td><td colspan="2">No da el valor mínimo de la pérdida. Da el <em>lugar</em> donde se alcanza: el valor de <em>c</em>. En el laboratorio, la altura del punto más bajo de la curva es el mínimo; su posición en el eje horizontal es el argmin.</td></tr>
+        <tr><td>\(E[\;\cdot\;]\)</td><td>«esperanza de…»</td><td colspan="2">El promedio a largo plazo. La parte 3 lo explica.</td></tr>
+        <tr><td>\(\mu_Y\)</td><td>«mu sub ye»</td><td colspan="2">La media de <em>Y</em>. La letra griega μ equivale a nuestra «m» de media.</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>ML1, págs. 37–38 (el mejor número <em>c</em> es μ<sub>y</sub>) y pág. 49 (funciones de pérdida y pérdida empírica). En la diapositiva 49 la suma aparece sin el índice ni el 1/<em>n</em> bien visibles: la forma completa es la de esta caja.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 4: Parte 2. Bajar el error
+     Insumo:    la curva del profesor (pág. 10), el ejemplo de Deisenroth (págs. 13-15)
+                y un espacio de gustos de películas
+     Resultado: derivada, límite, gradiente, descenso de gradiente y sus tres variantes
+     ============================================================ -->
+<section class="parte" id="p2">
+<div class="contenedor">
+  <p class="parte__num">Parte 2</p>
+  <h2>Bajar el error</h2>
+  <p class="parte__pregunta">Si tengo millones de perillas, ¿hacia dónde muevo cada una?</p>
+
+  <p>En el laboratorio 1 viste toda la curva de pérdida y encontraste el mínimo a ojo. Un modelo real no puede hacer eso. GPT tiene miles de millones de parámetros: nadie puede dibujar su curva de pérdida. El modelo solo «siente» la pendiente del terreno donde está.</p>
+  <p>Imagina que bajas una montaña con una niebla espesa. No ves el valle. Solo sientes con los pies hacia dónde baja el suelo. Das un paso en esa dirección y repites. Ese método se llama <strong>descenso de gradiente</strong>. Para entenderlo necesitas dos ideas del cálculo: la derivada y el gradiente.</p>
+
+  <h3>2.1 La derivada: cuánto cambia el error si mueves un poco la perilla</h3>
+  <p>La <strong>derivada</strong> de una función en un punto es la <strong>pendiente</strong> de la curva en ese punto. Responde una pregunta práctica: si muevo <em>x</em> un poco a la derecha, ¿cuánto sube o baja <em>f</em>(<em>x</em>)?</p>
+  <ul>
+    <li>Pendiente positiva → la curva sube hacia la derecha → para bajar, muévete a la izquierda.</li>
+    <li>Pendiente negativa → la curva baja hacia la derecha → para bajar, muévete a la derecha.</li>
+    <li>Pendiente cero → terreno plano: puede ser un mínimo, un máximo o una meseta.</li>
+  </ul>
+  <p>Para medir la pendiente en un punto, el cálculo usa un truco. Toma un segundo punto, a una distancia <em>h</em>, y traza la recta que une los dos: la <strong>secante</strong>. Luego acerca el segundo punto al primero.</p>
+
+  <figure class="lab" id="demo-derivada">
+    <p class="lab__titulo">Laboratorio 2 · De la secante a la tangente</p>
+    <p class="lab__guia">La curva es la del ejemplo de la clase: \(f(x)=x^4+7x^3+5x^2-17x+3\). Reduce <em>h</em>: la secante (índigo) se acerca a la tangente (ámbar) y su pendiente se acerca a la derivada.</p>
+    <canvas id="derivada-lienzo" aria-label="Curva con su secante y su tangente"></canvas>
+    <div class="lab__controles">
+      <div class="lab__control"><label for="derivada-x">x =</label><input type="range" id="derivada-x" min="-6" max="1.8" step="0.01" value="-3"><output id="derivada-x-out">−3</output></div>
+      <div class="lab__control"><label for="derivada-h">h =</label><input type="range" id="derivada-h" min="0.01" max="2" step="0.01" value="1.5"><output id="derivada-h-out">1,5</output></div>
+    </div>
+    <p class="lab__lectura" id="derivada-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="2.1">
+    <p class="caja__titulo">Reto 2.1</p>
+    <p>Pon <em>x</em> = 0 en el laboratorio. La derivada vale −17: es negativa. Si quieres bajar por la curva, ¿hacia dónde te mueves?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Pendiente negativa significa que la curva baja cuando avanzas a la derecha.">A la izquierda</button>
+      <button class="opcion" type="button" data-correcta>A la derecha</button>
+      <button class="opcion" type="button" data-pista="La derivada solo es cero en el fondo de un valle o en la cima de una loma.">Me quedo quieto: ya estoy en un mínimo</button>
+    </div>
+    <p class="respuesta">Correcto. La regla práctica es: <strong>muévete en el sentido contrario al signo de la derivada</strong>. Derivada negativa → avanza a la derecha. Derivada positiva → retrocede a la izquierda. Esa regla, repetida, es todo el descenso de gradiente.</p>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \frac{df}{dx} := \lim_{h \to 0} \frac{f(x+h) - f(x)}{h} \]</div>
+    <p class="lee">la derivada de <em>f</em> respecto de <em>x</em> se define como el valor al que se acerca la pendiente de la secante cuando la distancia <em>h</em> se hace cada vez más pequeña.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(\frac{df}{dx}\) o \(f'(x)\)</td><td>«de efe, de equis» o «efe prima de equis»</td><td>La derivada: la pendiente de la curva en <em>x</em>. No es una división de dos números; es un solo símbolo.</td></tr>
+        <tr><td>\(:=\)</td><td>«se define como»</td><td>No afirma una igualdad que haya que probar: fija el significado del símbolo de la izquierda.</td></tr>
+        <tr><td>\(\lim_{h\to 0}\)</td><td>«límite cuando h tiende a cero»</td><td>El valor al que se acerca la expresión cuando <em>h</em> se acerca a 0, sin llegar nunca a 0.</td></tr>
+        <tr><td>\(f(x+h)-f(x)\)</td><td>«efe de equis más hache, menos efe de equis»</td><td>Cuánto cambia la altura de la curva al avanzar <em>h</em>.</td></tr>
+        <tr><td>\(\frac{\;\cdot\;}{h}\)</td><td>«entre hache»</td><td>Cambio de altura por cada unidad de avance: eso es una pendiente.</td></tr>
+        <tr><td>\(f''(x)\)</td><td>«efe segunda»</td><td>La derivada de la derivada: dice si la curva tiene forma de taza (<em>f</em>″ &gt; 0, mínimo) o de cúpula (<em>f</em>″ &lt; 0, máximo).</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>Reglas de derivación</strong> (pág. 7). No necesitas memorizarlas para esta lección; Python las aplica por ti. Una de ellas importa mucho: la <strong>regla de la cadena</strong>, \((g(f(x)))' = g'(f(x))\,f'(x)\). Dice que, si una función está dentro de otra, sus derivadas se multiplican. Las redes neuronales son funciones dentro de funciones, muchas veces. Su entrenamiento (<em>backpropagation</em>; Rumelhart, Hinton y Williams, 1986) es la regla de la cadena aplicada capa por capa.</p>
+  </aside>
+
+  <aside class="caja caja--filosofia">
+    <p class="caja__titulo">Puente con la filosofía: el límite como un juego de cuantificadores</p>
+    <p>La definición de límite de la pág. 5 usa los cuantificadores de la lógica formal: ∀ («para todo») y ∃ («existe»).</p>
+    <div class="formula-grande">\[ a_n \to L \iff \forall \varepsilon > 0,\ \exists N > 0 : \forall n > N,\ |a_n - L| < \varepsilon \]</div>
+    <p>Léela como un juego entre un escéptico y tú. El escéptico elige una tolerancia ε, tan pequeña como quiera. Tú debes responder con un número <em>N</em>: desde ese lugar en adelante, todos los términos de la sucesión deben quedar a menos de ε del valor <em>L</em>. Si siempre puedes responder, la sucesión converge a <em>L</em>. El orden de los cuantificadores importa: primero elige el escéptico (∀ε), después respondes tú (∃<em>N</em>).</p>
+    <p>Newton y Leibniz razonaban con «cantidades infinitamente pequeñas». Berkeley (<em>The Analyst</em>, 1734) se burló de ellas: las llamó «fantasmas de cantidades difuntas». Cauchy y Weierstrass, en el siglo XIX, cambiaron lo infinitamente pequeño por este juego finito de ε y <em>N</em>.</p>
+    <figure class="lab" id="demo-limite" style="margin-bottom:6px">
+      <p class="lab__titulo">Laboratorio 3 · Juega de defensor</p>
+      <p class="lab__guia">La sucesión es \(a_n = 1 + (-1)^n\,\tfrac{2}{n}\). Su límite es <em>L</em> = 1. Mueve ε: la página calcula tu respuesta <em>N</em>.</p>
+      <canvas id="limite-lienzo" aria-label="Términos de la sucesión y la franja de tolerancia"></canvas>
+      <div class="lab__controles">
+        <div class="lab__control"><label for="limite-e">ε =</label><input type="range" id="limite-e" min="0.04" max="1" step="0.01" value="0.25"><output id="limite-e-out">0,25</output></div>
+      </div>
+      <p class="lab__lectura" id="limite-lectura" aria-live="polite"></p>
+    </figure>
+  </aside>
+
+  <h3>2.2 Mínimos locales: la niebla engaña</h3>
+  <p>La curva del laboratorio 2 tiene dos valles. El de la izquierda es más profundo: es el <strong>mínimo global</strong>. El de la derecha es un <strong>mínimo local</strong>: es el punto más bajo de su zona, pero no de toda la curva. Entre los dos hay una loma: un <strong>máximo local</strong>. En los tres puntos la derivada vale cero.</p>
+  <p>Ahora baja la curva como lo haría un algoritmo. La regla de cada paso es: <strong>nueva posición = posición actual − γ × pendiente</strong>. La letra griega γ («gamma») es el <strong>tamaño del paso</strong>: multiplica la pendiente.</p>
+
+  <figure class="lab" id="demo-d1">
+    <p class="lab__titulo">Laboratorio 4 · Baja la curva con niebla</p>
+    <p class="lab__guia">Haz clic en la curva para elegir el punto de partida, o usa el control <em>x</em>₀. Luego pulsa «Un paso» o «20 pasos».</p>
+    <canvas id="d1-lienzo" aria-label="Curva con dos valles y el camino del descenso"></canvas>
+    <div class="lab__controles">
+      <div class="lab__control"><label for="d1-x0">x₀ =</label><input type="range" id="d1-x0" min="-6" max="1.8" step="0.1" value="1.5"><output id="d1-x0-out">1,5</output></div>
+      <div class="lab__control"><label for="d1-g">γ =</label><input type="range" id="d1-g" min="0.001" max="0.045" step="0.001" value="0.01"><output id="d1-g-out">0,010</output></div>
+      <div class="lab__control">
+        <button class="boton" type="button" id="d1-paso">Un paso</button>
+        <button class="boton boton--hueco" type="button" id="d1-veinte">20 pasos</button>
+        <button class="boton boton--hueco" type="button" id="d1-reinicio">Reiniciar</button>
+      </div>
+    </div>
+    <p class="lab__lectura" id="d1-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="2.2">
+    <p class="caja__titulo">Reto 2.2</p>
+    <p>Parte en <em>x</em>₀ = 1,5 con γ = 0,01. ¿Dónde terminas? Responde antes de probar.</p>
+    <p><button class="boton boton--hueco" type="button" data-preparar="d1" data-x0="1.5" data-g="0.01">Preparar el caso en el laboratorio</button></p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Para llegar ahí, la bola tendría que subir la loma de x ≈ −1,43. El descenso nunca sube.">En el mínimo global (x ≈ −4,48)</button>
+      <button class="opcion" type="button" data-correcta>En el mínimo local (x ≈ 0,66)</button>
+      <button class="opcion" type="button" data-pista="La loma es un máximo: la bola se aleja de ella.">En el máximo local (x ≈ −1,43)</button>
+    </div>
+    <p class="respuesta">Correcto. La bola solo ve la pendiente bajo sus pies. Desde 1,5, el valle más cercano es el local, y de ahí no sale. Para llegar al global, parte a la izquierda de la loma (<em>x</em>₀ &lt; −1,43). En los modelos reales, la pérdida tiene muchos valles. Por eso el punto de partida importa, y por eso se suele entrenar varias veces con puntos de partida al azar.</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="2.3">
+    <p class="caja__titulo">Reto 2.3</p>
+    <p>Ahora parte en <em>x</em>₀ = −5,5, muy cerca del mínimo global, pero con un paso grande: γ = 0,04. ¿Dónde terminas?</p>
+    <p><button class="boton boton--hueco" type="button" data-preparar="d1" data-x0="-5.5" data-g="0.04">Preparar el caso en el laboratorio</button></p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Prueba en el laboratorio: mira dónde cae el primer paso.">En el mínimo global: está muy cerca</button>
+      <button class="opcion" type="button" data-correcta>En el mínimo local, al otro lado de la loma</button>
+      <button class="opcion" type="button" data-pista="Con γ = 0,04 la bola no se escapa de la curva. Prueba en el laboratorio.">Fuera de la curva: el camino se escapa</button>
+    </div>
+    <p class="respuesta">Correcto, y es contraintuitivo. En −5,5 la pendiente es muy fuerte (−102). El primer paso mide 0,04 × 102 ≈ 4,1 unidades: la bola salta por encima del valle global y cae cerca de la loma. Desde ahí rueda al valle local. <strong>Un paso demasiado grande puede saltarse el mejor valle.</strong></p>
+  </aside>
+
+  <h3>2.3 Muchas perillas: funciones de varias variables</h3>
+  <p>Hasta aquí, la función tenía una sola entrada, <em>x</em>. Los modelos reales tienen muchas. La ecuación de Mincer, clásica en economía laboral, predice el salario con dos entradas: años de educación y años de experiencia. Se escribe salario = <em>f</em>(educación, experiencia). La entrada ya no es un número: es un <strong>vector</strong>, una lista ordenada de números. La salida sigue siendo un solo número. Las diapositivas lo escriben así: \(f:\mathbb{R}^n \to \mathbb{R}\).</p>
+  <p>Volvamos a Netflix. Tu gusto es un vector de dos números: cuánto te gusta la acción y cuánto te gustan las historias serias. Cada película también es un vector: cuánta acción tiene y qué tan seria es.</p>
+
+  <figure class="lab lab--ancho" id="demo-gustos">
+    <p class="lab__titulo">Laboratorio 5 · Tu lugar en el espacio de gustos</p>
+    <p class="lab__guia">Arrastra el punto «Tú». La nota predicha para cada película es: (tu gusto por la acción × su acción) + (tu gusto por lo serio × su seriedad). La lista se reordena sola.</p>
+    <div class="lab__dos lab__dos--mapa">
+      <canvas id="gustos-lienzo" aria-label="Mapa de películas y tu punto de gustos"></canvas>
+      <div>
+        <p class="ui" style="margin:0 0 6px;font-weight:700">Recomendaciones para ti</p>
+        <ol id="gustos-lista" class="ui" style="padding-left:1.2em;margin:0"></ol>
+      </div>
+    </div>
+    <p class="lab__lectura" id="gustos-lectura" aria-live="polite"></p>
+    <p class="nota-pie">Coordenadas inventadas para el ejemplo. Un sistema real usa entre 20 y 300 dimensiones, y nadie les pone nombre.</p>
+  </figure>
+
+  <p>La lectura del laboratorio muestra una <strong>derivada parcial</strong>: cuánto cambia la nota de una película si mueves <em>una sola</em> entrada (tu gusto por la acción) y dejas fija la otra. Cada entrada tiene su derivada parcial. El <strong>gradiente</strong> junta todas las derivadas parciales en una lista, y esa lista es una flecha. <strong>La flecha apunta hacia donde la función sube más rápido.</strong> En este ejemplo, el gradiente de la nota de una película es la propia película: tu nota sube más rápido si mueves tu punto en la dirección de ella.</p>
+  <p><strong>¿De dónde salen las coordenadas?</strong> Nadie las escribe a mano. El sistema empieza con coordenadas al azar para cada persona y cada película. Luego compara la nota predicha con las notas reales de millones de personas y mueve todas las coordenadas con el descenso de gradiente. El sistema descubre solo las dimensiones del gusto. Este método se llama <strong>factorización de matrices</strong> y fue clave en el concurso Netflix Prize, de 2006 a 2009 (Koren, Bell y Volinsky, 2009).</p>
+  <p>GPT usa la misma idea con las palabras. Cada palabra recibe un vector, llamado <strong><em>embedding</em></strong>. Las palabras con significados parecidos quedan cerca. Y algunas relaciones de significado se vuelven direcciones (Mikolov y otros, 2013):</p>
+  <figure style="margin:1em 0;text-align:center">
+    <svg viewBox="0 0 420 190" width="420" role="img" aria-label="Paralelogramo: de hombre a mujer y de rey a reina hay la misma flecha" style="max-width:100%;font-family:var(--letra-titulos);font-size:14px">
+      <defs><marker id="punta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--g-serie2)"/></marker>
+      <marker id="punta2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" style="fill:var(--g-eje)"/></marker></defs>
+      <line x1="80" y1="150" x2="80" y2="52" style="stroke:var(--g-serie2);stroke-width:2.5" marker-end="url(#punta)"/>
+      <line x1="300" y1="150" x2="300" y2="52" style="stroke:var(--g-serie2);stroke-width:2.5" marker-end="url(#punta)"/>
+      <line x1="88" y1="150" x2="290" y2="150" style="stroke:var(--g-eje);stroke-width:1.5;stroke-dasharray:5 4" marker-end="url(#punta2)"/>
+      <line x1="88" y1="42" x2="290" y2="42" style="stroke:var(--g-eje);stroke-width:1.5;stroke-dasharray:5 4" marker-end="url(#punta2)"/>
+      <circle cx="80" cy="150" r="6" style="fill:var(--g-serie1)"/><circle cx="80" cy="42" r="6" style="fill:var(--g-serie1)"/>
+      <circle cx="300" cy="150" r="6" style="fill:var(--g-serie1)"/><circle cx="300" cy="42" r="6" style="fill:var(--g-serie1)"/>
+      <text x="80" y="176" text-anchor="middle" style="fill:var(--tinta)">hombre</text>
+      <text x="80" y="26" text-anchor="middle" style="fill:var(--tinta)">mujer</text>
+      <text x="300" y="176" text-anchor="middle" style="fill:var(--tinta)">rey</text>
+      <text x="300" y="26" text-anchor="middle" style="fill:var(--tinta)">reina</text>
+      <text x="62" y="100" text-anchor="end" style="fill:var(--g-serie2)">misma</text>
+      <text x="62" y="117" text-anchor="end" style="fill:var(--g-serie2)">flecha</text>
+      <text x="190" y="138" text-anchor="middle" style="fill:var(--tinta-suave);font-size:12px">«realeza»</text>
+    </svg>
+    <figcaption class="nota-pie">rey − hombre + mujer ≈ reina. La flecha de «hombre» a «mujer» es casi la misma que la de «rey» a «reina».</figcaption>
+  </figure>
+
+  <h3>2.4 El gradiente en un mapa de curvas de nivel</h3>
+  <p>Una función de dos entradas es un terreno. Las dos entradas son la posición (este–oeste y norte–sur) y la salida es la altura. Un mapa topográfico dibuja ese terreno con <strong>curvas de nivel</strong>: cada curva une los puntos que tienen la misma altura. Donde las curvas se juntan, el terreno es empinado. El gradiente siempre cruza las curvas de nivel en ángulo recto, cuesta arriba. El descenso de gradiente camina en sentido contrario.</p>
+  <p>Este es el ejemplo de la clase (ML1, págs. 13–15), tomado de Deisenroth y otros (2020, ejemplo 7.1). La función es:</p>
+  <div class="formula-grande">\[ f(x_1, x_2) = x_1^2 + x_1 x_2 + 10\,x_2^2 - 5\,x_1 - 3\,x_2 \]</div>
+  <p>Sus dos derivadas parciales son \(\frac{\partial f}{\partial x_1} = 2x_1 + x_2 - 5\) (mueves solo \(x_1\)) y \(\frac{\partial f}{\partial x_2} = x_1 + 20\,x_2 - 3\) (mueves solo \(x_2\)). En el punto de partida (−3; −1) valen −12 y −26. El gradiente (−12; −26) apunta al suroeste, cuesta arriba. Por eso el descenso camina al noreste, como dice la diapositiva 15.</p>
+
+  <figure class="lab lab--ancho" id="demo-d2">
+    <p class="lab__titulo">Laboratorio 6 · El ejemplo de la clase, paso a paso</p>
+    <p class="lab__guia">Haz clic en el mapa para elegir otro punto de partida. La flecha ámbar es el sentido contrario al gradiente. Compara la tabla con la diapositiva 15.</p>
+    <canvas id="d2-lienzo" aria-label="Mapa de curvas de nivel con el camino del descenso de gradiente"></canvas>
+    <div class="lab__controles">
+      <div class="lab__control"><label for="d2-g">γ =</label><input type="range" id="d2-g" min="0.005" max="0.12" step="0.001" value="0.085"><output id="d2-g-out">0,085</output></div>
+      <div class="lab__control">
+        <button class="boton" type="button" id="d2-paso">Un paso</button>
+        <button class="boton boton--hueco" type="button" id="d2-diez">10 pasos</button>
+        <button class="boton boton--hueco" type="button" id="d2-reinicio">Volver a (−3; −1)</button>
+      </div>
+    </div>
+    <div class="lab__dos" style="margin-top:10px">
+      <div class="tabla-desliza"><table class="datos" id="d2-tabla"><thead><tr><th>Paso</th><th class="num">x₁</th><th class="num">x₂</th><th class="num">f(x)</th></tr></thead><tbody></tbody></table></div>
+      <p class="lab__lectura" id="d2-lectura" aria-live="polite" style="margin-top:10px"></p>
+    </div>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="2.4">
+    <p class="caja__titulo">Reto 2.4</p>
+    <p>Con γ = 0,085 el camino zigzaguea. ¿Por qué?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-correcta>Porque el valle es largo y angosto: el terreno es mucho más empinado en x₂ que en x₁</button>
+      <button class="opcion" type="button" data-pista="Prueba un γ más pequeño: el zigzag se reduce, pero el avance se vuelve muy lento.">Porque γ es demasiado pequeño</button>
+      <button class="opcion" type="button" data-pista="Esta función tiene forma de taza: un solo mínimo, marcado con una estrella.">Porque hay varios mínimos</button>
+    </div>
+    <p class="respuesta">Correcto. El término 10<em>x</em>₂² hace que el terreno sea unas 20 veces más empinado de norte a sur que de este a oeste. La flecha apunta sobre todo hacia el fondo del valle, no a lo largo de él. Cada paso cruza el valle y vuelve. Deisenroth y otros (2020, sec. 7.1) llaman a esto un problema «mal condicionado».</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="2.5">
+    <p class="caja__titulo">Reto 2.5</p>
+    <p>Sube γ a 0,11 y da 10 pasos desde (−3; −1). ¿Qué pasa?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Prueba en el laboratorio y mira la columna f(x) de la tabla.">Llega más rápido al mínimo</button>
+      <button class="opcion" type="button" data-correcta>Cada salto es más grande que el anterior y el camino se escapa</button>
+      <button class="opcion" type="button" data-pista="El descenso solo se detiene donde el gradiente vale cero.">El camino se detiene a mitad del valle</button>
+    </div>
+    <p class="respuesta">Correcto. Con un paso demasiado grande, cada salto cruza el valle y cae más alto que antes: <em>f</em>(<em>x</em>) crece en lugar de bajar. En este ejemplo el límite está cerca de γ = 0,0997. En la práctica, el tamaño del paso se elige con pruebas: grande para avanzar rápido, pero no tanto como para escapar del valle.</p>
+  </aside>
+
+  <h3>2.5 Todos los datos, uno solo o un puñado</h3>
+  <p>En machine learning, la función que bajamos es la pérdida promedio sobre los datos. Para calcular el gradiente exacto hay que recorrer todos los datos. Con millones de casos, cada paso cuesta mucho. Hay tres opciones (ML1, págs. 18–19):</p>
+  <ul>
+    <li><strong>Lotes completos</strong> (<em>batch</em>): cada paso usa todos los datos. Pasos precisos y caros.</li>
+    <li><strong>Estocástico</strong> (<em>stochastic</em>): cada paso usa un solo caso elegido al azar. Pasos baratos y ruidosos.</li>
+    <li><strong>Minilotes</strong> (<em>mini-batch</em>): cada paso usa un grupo pequeño al azar, por ejemplo 8 o 32 casos. Es el término medio, y es lo que usan GPT y casi todas las redes neuronales.</li>
+  </ul>
+  <p>Una <strong>época</strong> es una pasada completa por todos los datos.</p>
+
+  <figure class="lab lab--ancho" id="demo-lotes">
+    <p class="lab__titulo">Laboratorio 7 · Tres maneras de bajar</p>
+    <p class="lab__guia">Cuarenta personas simuladas: años de educación e ingreso mensual. El modelo es una recta con dos parámetros: <em>a</em> (altura) y <em>b</em> (inclinación). A la izquierda, el mapa de la pérdida según <em>a</em> y <em>b</em>. A la derecha, las rectas de cada método. Cada método da 40 pasos.</p>
+    <div class="lab__dos">
+      <canvas id="lotes-mapa" aria-label="Mapa de pérdida con los caminos de los tres métodos"></canvas>
+      <canvas id="lotes-datos" aria-label="Datos de educación e ingreso con las rectas de cada método"></canvas>
+    </div>
+    <div class="leyenda"><span style="--c:var(--g-serie1)">Lotes completos (40 casos por paso)</span><span style="--c:var(--g-serie3)">Minilotes (8 casos por paso)</span><span style="--c:var(--g-serie2)">Estocástico (1 caso por paso)</span></div>
+    <div class="lab__controles">
+      <button class="boton" type="button" id="lotes-correr">Correr los tres métodos</button>
+      <button class="boton boton--hueco" type="button" id="lotes-reiniciar">Nuevo sorteo y reiniciar</button>
+    </div>
+    <p class="lab__lectura" id="lotes-lectura" aria-live="polite"></p>
+    <p class="nota-pie">Datos simulados. Para que el mapa se lea bien, el modelo mide la educación en bloques de 4 años desde los 6 años. γ = 0,1 en los tres métodos.</p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="2.6">
+    <p class="caja__titulo">Reto 2.6</p>
+    <p>Después de 40 pasos, ¿qué método leyó menos datos en total?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Lotes completos lee los 40 casos en cada paso: 40 × 40.">Lotes completos</button>
+      <button class="opcion" type="button" data-pista="Minilotes lee 8 casos por paso: 8 × 40.">Minilotes</button>
+      <button class="opcion" type="button" data-correcta>Estocástico</button>
+    </div>
+    <p class="respuesta">Correcto. El estocástico leyó 40 casos (una época). Minilotes leyó 320 (8 épocas). Lotes completos leyó 1 600 (40 épocas). El camino estocástico es ruidoso, pero cada paso es barato. Con millones de datos, ese ahorro decide si el entrenamiento dura horas o años.</p>
+  </aside>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 2 · Bajar el error">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>La <strong>derivada</strong> es la pendiente de la curva en un punto. Para bajar, muévete en sentido contrario a su signo.</li>
+      <li>En un mínimo o un máximo, la derivada vale cero. La segunda derivada distingue: <em>f</em>″ &gt; 0, mínimo; <em>f</em>″ &lt; 0, máximo.</li>
+      <li>Una <strong>derivada parcial</strong> mide el cambio de <em>f</em> cuando mueves una sola entrada y fijas las demás.</li>
+      <li>El <strong>gradiente</strong> ∇<em>f</em> es la lista de las derivadas parciales. Apunta hacia donde <em>f</em> sube más rápido y cruza las curvas de nivel en ángulo recto.</li>
+      <li><strong>Descenso de gradiente</strong>: nueva posición = posición actual − γ × gradiente. Repetir hasta que el gradiente sea casi cero.</li>
+      <li>El <strong>tamaño del paso</strong> γ decide mucho: muy pequeño, avance lento; muy grande, saltos que se escapan o que se saltan el mejor valle.</li>
+      <li>El descenso puede quedar atrapado en un <strong>mínimo local</strong>. El punto de partida importa.</li>
+      <li>Lotes completos: todos los datos por paso. Estocástico: un caso. Minilotes: un grupo pequeño. <strong>Época</strong>: una pasada completa por los datos.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ f:\mathbb{R}^n \to \mathbb{R}, \qquad x \mapsto f(x) \]</div>
+    <div class="formula-grande">\[ \frac{\partial f}{\partial x_1} := \lim_{h\to 0}\frac{f(x_1+h,\,x_2,\,\dots,\,x_n) - f(x)}{h} \]</div>
+    <div class="formula-grande">\[ \nabla_x f = \left[\frac{\partial f}{\partial x_1},\ \frac{\partial f}{\partial x_2},\ \dots,\ \frac{\partial f}{\partial x_n}\right] \]</div>
+    <div class="formula-grande">\[ x_{k+1} = x_k - \gamma\,\big(\nabla f(x_k)\big)^{\top} \]</div>
+    <p class="lee">la nueva posición es la posición actual menos γ veces el gradiente en la posición actual.</p>
+    <p>Con los números de la clase:</p>
+    <div class="formula-grande">\[ x_1 = (-3;\,-1) - 0{,}085 \times (-12;\,-26) = (-1{,}98;\ 1{,}21) \]</div>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th><th>En el ejemplo</th></tr></thead>
+      <tbody>
+        <tr><td>\(\mathbb{R}\)</td><td>«erre»</td><td>Los números reales: cualquier número, con o sin decimales.</td><td>La altura <em>f</em>(<em>x</em>)</td></tr>
+        <tr><td>\(\mathbb{R}^n\)</td><td>«erre ene»</td><td>Las listas de <em>n</em> números reales (vectores).</td><td>(educación, experiencia): <em>n</em> = 2</td></tr>
+        <tr><td>\(f:\mathbb{R}^n\to\mathbb{R}\)</td><td>«efe va de erre ene a erre»</td><td><em>f</em> recibe una lista de <em>n</em> números y entrega un solo número.</td><td>Recibe tu punto de gustos y entrega una nota</td></tr>
+        <tr><td>\(x\mapsto f(x)\)</td><td>«equis se asigna a efe de equis»</td><td>La regla que lleva cada entrada a su salida.</td><td></td></tr>
+        <tr><td>\(\partial\)</td><td>«de parcial»</td><td>Derivada parcial: solo se mueve una entrada.</td><td>\(\frac{\partial f}{\partial x_1}=2x_1+x_2-5\)</td></tr>
+        <tr><td>\(\nabla\)</td><td>«nabla»</td><td>El gradiente: la lista de las derivadas parciales.</td><td>∇<em>f</em>(−3; −1) = (−12; −26)</td></tr>
+        <tr><td>\(x_k,\ x_{k+1}\)</td><td>«equis sub ka», «equis sub ka más uno»</td><td>La posición antes y después de un paso. <strong>Ojo:</strong> en esta fórmula el subíndice cuenta pasos; en la de la derivada parcial, \(x_1\) era la primera entrada. Las diapositivas usan la misma letra para las dos cosas.</td><td>\(x_0=(-3;-1)\), \(x_1=(-1{,}98;\,1{,}21)\)</td></tr>
+        <tr><td>\(\gamma\)</td><td>«gamma»</td><td>El tamaño del paso. En inglés: <em>learning rate</em>.</td><td>0,085</td></tr>
+        <tr><td>\({}^{\top}\)</td><td>«transpuesta»</td><td>Pasa la lista de fila a columna. No cambia los números: es un detalle de formato.</td><td></td></tr>
+        <tr><td>\(\theta := \theta - \nabla f\)</td><td>«theta se reemplaza por theta menos nabla efe»</td><td>La misma regla, como aparece en la pág. 17: θ son los parámetros del modelo y γ quedó implícito.</td><td></td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>ML1, págs. 3–19: funciones (3–4), límite (5), derivada (6–7), derivadas parciales y gradiente (8, 11), optimización (9–10), descenso de gradiente (12–17) y sus variantes (18–19). Notas del 22-11: «la gradiente nos da la dirección donde crece más rápido»; «curva de nivel: todas las combinaciones tienen el mismo valor». En clase se dijo «rey + mujer ≈ reina»; la versión completa resta «hombre»: rey − hombre + mujer ≈ reina.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 5: Parte 3. Razonar con incertidumbre
+     Insumo:    un dado, el defecto genético (págs. 25-26), dos dados (pág. 32),
+                la distribución «techo» (págs. 35, 42) y datos abiertos del SIS
+     Resultado: probabilidad condicional, Bayes, esperanza y esperanza condicional
+     ============================================================ -->
+<section class="parte" id="p3">
+<div class="contenedor">
+  <p class="parte__num">Parte 3</p>
+  <h2>Razonar con incertidumbre</h2>
+  <p class="parte__pregunta">¿Qué tan probable es cada respuesta, y qué cambia cuando sé algo más?</p>
+
+  <p>GPT no elige «la» palabra correcta: asigna probabilidades. Un filtro de spam no sabe si un correo es spam: calcula qué tan probable es. La probabilidad es el lenguaje con el que el machine learning habla de lo que no sabe con certeza.</p>
+
+  <h3>3.1 Los tres ingredientes</h3>
+  <p>Toda situación incierta se describe con tres cosas (ML1, pág. 21):</p>
+  <ul>
+    <li><strong>Ω</strong> («omega»): el conjunto de todos los resultados posibles. Al tirar un dado, Ω = {1, 2, 3, 4, 5, 6}.</li>
+    <li><strong>𝒜</strong>: la colección de <strong>eventos</strong>. Un evento es un grupo de resultados que te interesa. Por ejemplo, «sale par» = {2, 4, 6}.</li>
+    <li><strong>P</strong>: la medida de probabilidad. Asigna a cada evento un número entre 0 y 1.</li>
+  </ul>
+  <p><em>P</em> cumple cuatro reglas (pág. 22): nunca es negativa; el evento vacío tiene probabilidad 0; Ω tiene probabilidad 1; y si dos eventos no pueden ocurrir juntos, la probabilidad de que ocurra uno u otro es la suma de sus probabilidades.</p>
+
+  <h3>3.2 Probabilidad condicional: cuando sabes algo más</h3>
+  <p>La <strong>probabilidad condicional</strong> P(A | B) responde: si ya sé que ocurrió B, ¿qué tan probable es A? En la práctica, B achica el mundo. Ya no cuentas sobre todos los resultados: solo sobre los que están en B.</p>
+
+  <figure class="lab" id="demo-dado">
+    <p class="lab__titulo">Laboratorio 8 · Eventos con un dado</p>
+    <p class="lab__guia">Marca las caras del evento A (índigo) y del evento B (ámbar). La página cuenta por ti.</p>
+    <div class="caras" id="dado-a" role="group" aria-label="Caras del evento A"><span class="etq">Evento A</span></div>
+    <div class="caras caras--b" id="dado-b" role="group" aria-label="Caras del evento B" style="margin-top:8px"><span class="etq">Evento B</span></div>
+    <p class="lab__lectura" id="dado-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="3.1">
+    <p class="caja__titulo">Reto 3.1</p>
+    <p>Con A = {1, 2} y B = {2, 3} (el ejemplo de la pág. 23): si sabes que salió 2 o 3, ¿cuál es la probabilidad de A?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="1/3 es P(A) sin saber nada. Saber B cambia el mundo: solo quedan el 2 y el 3.">1/3</button>
+      <button class="opcion" type="button" data-correcta>1/2</button>
+      <button class="opcion" type="button" data-pista="1/6 es P(A ∩ B): la probabilidad de que salga 2 sin saber nada. Falta dividir entre P(B).">1/6</button>
+    </div>
+    <p class="respuesta">Correcto. B deja dos resultados posibles: 2 y 3. Solo uno de ellos, el 2, está en A. Por eso P(A | B) = (1/6) / (2/6) = 1/2. Sin saber B, P(A) era 1/3: la información cambió la probabilidad.</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="3.2" id="reto-independencia">
+    <p class="caja__titulo">Reto 3.2 · Construye</p>
+    <p>Deja A = {1, 2}. En el laboratorio, busca un evento B que <strong>no cambie</strong> la probabilidad de A. B no puede estar vacío ni tener las seis caras.</p>
+    <p class="respuesta respuesta--pendiente visible" id="independencia-estado">Todavía no: con el B actual, P(A | B) es distinto de P(A) = 1/3.</p>
+    <p class="respuesta" id="independencia-ok"></p>
+  </aside>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 3 · Probabilidad condicional">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li><strong>P(A | B) = P(A ∩ B) / P(B)</strong>: cuenta solo dentro de B.</li>
+      <li>A y B son <strong>independientes</strong> si saber B no cambia la probabilidad de A: P(A | B) = P(A). Equivale a P(A ∩ B) = P(A) · P(B).</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ P(A \mid B) = \frac{P(A \cap B)}{P(B)}, \quad P(B) \neq 0 \qquad\qquad A \text{ y } B \text{ independientes} \iff P(A \cap B) = P(A)\,P(B) \]</div>
+    <p class="lee">la probabilidad de A dado B es la probabilidad de que A y B ocurran juntos, dividida entre la probabilidad de B.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(P(A)\)</td><td>«pe de A»</td><td>La probabilidad del evento A.</td></tr>
+        <tr><td>\(\mid\)</td><td>«dado»</td><td>Lo que está a la derecha ya se sabe. Las diapositivas escriben P(A/B), con barra inclinada: significa lo mismo.</td></tr>
+        <tr><td>\(\cap\)</td><td>«intersección»</td><td>A y B a la vez: los resultados que están en los dos.</td></tr>
+        <tr><td>\(\cup\)</td><td>«unión»</td><td>A o B, o ambos.</td></tr>
+        <tr><td>\(\emptyset\)</td><td>«vacío»</td><td>El evento sin resultados: lo imposible.</td></tr>
+        <tr><td>\(\Omega\)</td><td>«omega»</td><td>Todos los resultados posibles.</td></tr>
+        <tr><td>\(\in\)</td><td>«pertenece a»</td><td>\(3 \in B\): el resultado 3 está en el evento B.</td></tr>
+        <tr><td>\(\iff\)</td><td>«si y solo si»</td><td>Las dos afirmaciones son equivalentes: cada una implica la otra.</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <h3>3.3 Bayes: ¿qué tan grave es un resultado positivo?</h3>
+  <p>El ejemplo de la clase (págs. 25–26): un defecto genético J está asociado a una enfermedad z. Los investigadores saben tres cosas. El 0,01 % de la población tiene la enfermedad. El defecto aparece en el 50 % de los enfermos. Y el 0,1 % de toda la población tiene el defecto. Una persona tiene el defecto. ¿Qué tan probable es que tenga la enfermedad?</p>
+
+  <aside class="caja caja--reto" data-reto="3.3">
+    <p class="caja__titulo">Reto 3.3 · Apuesta primero</p>
+    <p>Sin calcular, ¿qué respuesta te parece más cercana?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Es la respuesta más común, y es la falacia de la tasa base. 50 % es P(defecto | enfermedad), no al revés. Piensa en 1 000 000 de personas.">Cerca de 50 %</button>
+      <button class="opcion" type="button" data-correcta>Cerca de 5 %</button>
+      <button class="opcion" type="button" data-pista="Demasiado bajo. Piensa en 1 000 000 de personas: ¿cuántas tienen el defecto y cuántas de ellas están enfermas?">Cerca de 0,5 %</button>
+    </div>
+    <p class="respuesta">Correcto. Piensa en 1 000 000 de personas. 100 tienen la enfermedad. La mitad de ellas, 50, tiene el defecto. En total, 1 000 personas tienen el defecto. De esas 1 000, solo 50 están enfermas: 50 / 1 000 = <strong>5 %</strong>. La mayoría de quienes tienen el defecto está sana, porque la enfermedad es muy rara.</p>
+  </aside>
+
+  <figure class="lab" id="demo-bayes">
+    <p class="lab__titulo">Laboratorio 9 · Bayes con personas, no con fórmulas</p>
+    <p class="lab__guia">Los valores iniciales son los de la clase. Mueve la frecuencia de la enfermedad y mira cómo cambia la respuesta final.</p>
+    <div class="lab__controles" style="margin-top:0">
+      <div class="lab__control"><label for="bayes-pz">Frecuencia de la enfermedad, P(z):</label><input type="range" id="bayes-pz" min="-5" max="-1" step="0.01" value="-4"><output id="bayes-pz-out"></output></div>
+      <div class="lab__control"><label for="bayes-pjz">Defecto en los enfermos, P(J | z):</label><input type="range" id="bayes-pjz" min="0.05" max="1" step="0.01" value="0.5"><output id="bayes-pjz-out"></output></div>
+      <div class="lab__control"><label for="bayes-pjn">Defecto en los sanos, P(J | no z):</label><input type="range" id="bayes-pjn" min="-4" max="-0.7" step="any" value="-3.0223"><output id="bayes-pjn-out"></output></div>
+    </div>
+    <p class="lab__lectura" id="bayes-arbol" aria-live="polite"></p>
+    <canvas id="bayes-barra" aria-label="Personas con el defecto: enfermas y sanas"></canvas>
+    <div class="leyenda"><span style="--c:var(--g-serie4)">Con el defecto y enfermas</span><span style="--c:var(--g-serie1)">Con el defecto y sanas</span></div>
+    <div class="formula-grande" id="bayes-formula" style="margin-top:8px"></div>
+  </figure>
+
+  <aside class="caja caja--filosofia">
+    <p class="caja__titulo">Puente con la filosofía: cambiar de opinión con razones</p>
+    <p>El teorema de Bayes es una regla para revisar creencias ante una evidencia. Parte de una creencia previa, P(z). La evidencia J la actualiza y produce una creencia posterior, P(z | J). La epistemología bayesiana toma esta regla como modelo de la creencia racional.</p>
+    <p>El error del reto 3.3 tiene nombre: <strong>falacia de la tasa base</strong>, estudiada por Kahneman y Tversky. Olvidamos qué tan rara es la enfermedad (la tasa base) y nos dejamos llevar por lo llamativo de la evidencia. Un filtro de spam no comete ese error: con cada palabra del correo calcula P(spam | palabra) y combina las tasas base con la evidencia.</p>
+  </aside>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 3 · Bayes">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li><strong>Bayes invierte la condición</strong>: de P(J | z) pasa a P(z | J). No son iguales.</li>
+      <li>Con una enfermedad rara, un resultado positivo suele ser un falso positivo.</li>
+      <li>Truco: piensa en <strong>frecuencias</strong> (1 000 000 de personas), no en porcentajes.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ P(z \mid J) = \frac{P(J \mid z)\,P(z)}{P(J)} = \frac{0{,}5 \times 0{,}0001}{0{,}001} = 0{,}05 \]</div>
+    <p class="lee">la probabilidad de la enfermedad dado el defecto es igual a la probabilidad del defecto en los enfermos, por la frecuencia de la enfermedad, dividido entre la frecuencia del defecto.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Nombre</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(P(z)\)</td><td>Probabilidad previa (<em>a priori</em>)</td><td>Lo que crees antes de ver la evidencia: la tasa base.</td></tr>
+        <tr><td>\(P(J\mid z)\)</td><td>Verosimilitud</td><td>Qué tan frecuente es la evidencia si la hipótesis es cierta.</td></tr>
+        <tr><td>\(P(J)\)</td><td>Probabilidad de la evidencia</td><td>Qué tan frecuente es la evidencia en total. Si no la conoces: \(P(J)=P(J\mid z)P(z)+P(J\mid \text{no }z)P(\text{no }z)\).</td></tr>
+        <tr><td>\(P(z\mid J)\)</td><td>Probabilidad posterior (<em>a posteriori</em>)</td><td>Lo que debes creer después de ver la evidencia.</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <h3>3.4 Variables aleatorias y esperanza: el promedio a largo plazo</h3>
+  <p>Una <strong>variable aleatoria</strong> convierte cada resultado en un número (pág. 27). El ejemplo de la clase: el clima es el resultado; la altura del mercurio en el termómetro es la variable aleatoria <em>X</em>. Gracias a <em>X</em>, puedes preguntar por eventos con números, como «la temperatura no baja de 0 grados»: P(<em>X</em> ≥ 0).</p>
+  <p>La <strong>función de distribución acumulada</strong> da la probabilidad de que <em>X</em> no supere un valor: \(P_X(x) = P(X \le x)\). Si <em>X</em> es continua, la derivada de esa función es la <strong>densidad</strong> \(p_X(x)\). La densidad no es una probabilidad: <strong>la probabilidad es el área bajo la densidad</strong>. Si <em>X</em> es uniforme entre 0 y 1, la densidad vale 1 en ese tramo, y P(0,2 &lt; <em>X</em> ≤ 0,5) es el área de un rectángulo de base 0,3 y altura 1: 0,3.</p>
+  <p>La <strong>esperanza</strong> (o valor esperado) E[<em>X</em>] es el promedio de <em>X</em> a largo plazo: cada valor pesa según su probabilidad. Para un dado: E[<em>X</em>] = (1 + 2 + 3 + 4 + 5 + 6) / 6 = 3,5. Ningún dado muestra 3,5; pero si lo tiras mil veces, el promedio de tus tiros se acercará a 3,5. En estadística, «esperanza» no es una virtud teologal: es un promedio ponderado.</p>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ E[X] = \sum_{j} x_j\, p(x_j) \ \ \text{(discreta)} \qquad E[X] = \int_{-\infty}^{\infty} x\, p_X(x)\, dx \ \ \text{(continua)} \]</div>
+    <p class="lee">la esperanza de <em>X</em> es la suma de cada valor posible multiplicado por su probabilidad. En el caso continuo, la suma se vuelve una integral.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(E[X]\)</td><td>«esperanza de equis»</td><td>El promedio a largo plazo de <em>X</em>.</td></tr>
+        <tr><td>\(x_j,\ p(x_j)\)</td><td>«equis sub jota», «pe de equis sub jota»</td><td>Cada valor posible y su probabilidad. En el dado: \(x_j = 1,\dots,6\) y \(p(x_j) = 1/6\).</td></tr>
+        <tr><td>\(\int\)</td><td>«integral»</td><td>Una suma continua: el área bajo la curva. La S alargada viene de <em>summa</em>.</td></tr>
+        <tr><td>\(dx\)</td><td>«diferencial de equis»</td><td>Un trozo muy delgado del eje <em>x</em>. La integral suma rectángulos de base <em>dx</em>.</td></tr>
+        <tr><td>\(-\infty,\ \infty\)</td><td>«menos infinito», «infinito»</td><td>De un extremo al otro del eje: todos los valores posibles.</td></tr>
+        <tr><td>\(P_X(x),\ p_X(x)\)</td><td>«pe mayúscula», «pe minúscula»</td><td>La distribución acumulada (probabilidad de no superar <em>x</em>) y la densidad (su derivada).</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <h3>3.5 La esperanza condicional: la mejor predicción por grupos</h3>
+  <p>Ahora se juntan las partes 1 y 3. En la parte 1, el mejor número único, con pérdida cuadrática, era la media. ¿Y si sabes algo del caso? Entonces la mejor predicción es <strong>la media de su grupo</strong>. Esa media por grupo es la <strong>esperanza condicional</strong>, E[<em>Y</em> | <em>X</em> = <em>x</em>]. La regla que da la media de cada grupo se llama <strong>función de esperanza condicional</strong> (FEC).</p>
+  <p>El ejemplo de la clase (pág. 32): tiras dos dados. <em>X</em> es la suma. <em>Y</em> es la diferencia entre los dos dados, sin signo. Si sabes la suma, ¿cuál es tu mejor predicción de la diferencia?</p>
+
+  <figure class="lab lab--ancho" id="demo-fec">
+    <p class="lab__titulo">Laboratorio 10 · Predecir la diferencia si conoces la suma</p>
+    <p class="lab__guia">La tabla es la de la diapositiva 32: cada celda da la probabilidad de un par (suma, diferencia). Haz clic en una columna para elegir una suma.</p>
+    <div class="tabla-desliza"><table class="dados-tabla" id="fec-tabla" aria-label="Distribución conjunta de la suma y la diferencia de dos dados"></table></div>
+    <div class="lab__dos" style="margin-top:12px">
+      <canvas id="fec-condicional" aria-label="Distribución de la diferencia dentro del grupo elegido"></canvas>
+      <canvas id="fec-curva" aria-label="Función de esperanza condicional y mejor recta"></canvas>
+    </div>
+    <div class="leyenda"><span style="--c:var(--g-serie1)">FEC: media de la diferencia en cada grupo</span><span style="--c:var(--g-serie2)">Mejor recta (predictor lineal)</span></div>
+    <p class="lab__lectura" id="fec-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="3.4">
+    <p class="caja__titulo">Reto 3.4</p>
+    <p>Si la suma es 7, ¿cuál es la mejor predicción de la diferencia, con pérdida cuadrática?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="3,5 es el valor esperado de un solo dado. Haz clic en la columna 7 de la tabla.">3,5</button>
+      <button class="opcion" type="button" data-correcta>3</button>
+      <button class="opcion" type="button" data-pista="5 es la diferencia más grande posible con suma 7, no la media del grupo.">5</button>
+    </div>
+    <p class="respuesta">Correcto. Con suma 7, los pares son (1, 6), (2, 5), (3, 4) y sus inversos. Las diferencias son 5, 3 y 1, todas con la misma probabilidad. Su media es 3. Sin saber la suma, tu mejor predicción sería 1,94: la media general.</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="3.5">
+    <p class="caja__titulo">Reto 3.5</p>
+    <p>La correlación entre la suma y la diferencia es exactamente cero. La mejor recta es horizontal. ¿Significa que la suma no ayuda a predecir la diferencia?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Si la suma es 2 o 12, ¿cuál es la diferencia? Mira la tabla.">Sí: con correlación cero, la suma no sirve para predecir</button>
+      <button class="opcion" type="button" data-correcta>No: la suma ayuda mucho, pero la relación no es una recta</button>
+      <button class="opcion" type="button" data-pista="Aquí no hay muestra: la tabla da las probabilidades exactas.">Depende del tamaño de la muestra</button>
+    </div>
+    <p class="respuesta">Correcto. La FEC tiene forma de carpa: sube hasta la suma 7 y después baja. Una recta no puede seguir esa forma, por eso su pendiente es 0. Pero si sabes que la suma es 2 o 12, sabes con certeza que la diferencia es 0. Las dos variables <strong>no están correlacionadas, pero no son independientes</strong> (pág. 30). Esta es la crítica de Breiman a los modelos lineales: un patrón puede existir aunque una recta no lo vea.</p>
+  </aside>
+
+  <p><strong>Ley de esperanzas iteradas</strong> (pág. 36). Si promedias las medias de cada grupo, y cada grupo pesa según su tamaño, recuperas la media general: E[<em>Y</em>] = E[E[<em>Y</em> | <em>X</em>]]. En los dados: 1,94. Es lo mismo que hace una tabla dinámica cuando calcula el total a partir de los subtotales.</p>
+
+  <h4>Un ejemplo de política pública: hospitalizaciones en el SIS</h4>
+  <p>¿Qué tan probable es que un asegurado con diabetes se hospitalice el próximo trimestre? Cada porcentaje de la tabla es una esperanza condicional: la media de una variable que vale 1 si la persona se hospitalizó y 0 si no, dentro de un grupo.</p>
+  <div class="tabla-desliza">
+  <table class="datos" id="tabla-sis">
+    <thead><tr><th>Grupo en el 3.<sup>er</sup> trimestre de 2025</th><th class="num">Personas</th><th>Se hospitalizó en el 4.º trimestre</th></tr></thead>
+    <tbody>
+      <tr class="destacada"><td>Todos los asegurados</td><td class="num">809 655</td><td data-pct="0.94">0,94 %</td></tr>
+      <tr><td>Se hospitalizó</td><td class="num">9 385</td><td data-pct="10.83">10,83 %</td></tr>
+      <tr><td>No se hospitalizó</td><td class="num">800 270</td><td data-pct="0.82">0,82 %</td></tr>
+      <tr><td>Tiene hipertensión</td><td class="num">323 303</td><td data-pct="1.48">1,48 %</td></tr>
+      <tr><td>No tiene hipertensión</td><td class="num">486 352</td><td data-pct="0.58">0,58 %</td></tr>
+      <tr><td>Tiene 75 años o más</td><td class="num">100 174</td><td data-pct="1.20">1,20 %</td></tr>
+      <tr><td>Tiene menos de 45 años</td><td class="num">190 280</td><td data-pct="0.54">0,54 %</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="nota-pie">Fuente: datos abiertos del SIS, asegurados activos con diabetes (3.<sup>er</sup> y 4.º trimestre de 2025). Cifras preliminares del proyecto final del curso.</p>
+  <p>Haber estado hospitalizado multiplica el riesgo por 13. Un modelo de machine learning hace lo mismo que esta tabla, pero con miles de grupos que combinan muchas variables a la vez.</p>
+
+  <h4>Tres propiedades de la FEC</h4>
+  <ol>
+    <li><strong>Predicción</strong> (pág. 40). Entre todas las funciones de <em>X</em>, la FEC es la que da la menor pérdida cuadrática esperada. Es el resultado de la parte 1, aplicado grupo por grupo.</li>
+    <li><strong>Descomposición</strong> (pág. 41). Todo <em>Y</em> se puede escribir como su FEC más un residuo: <em>Y</em> = E[<em>Y</em> | <em>X</em>] + ε. El residuo tiene media cero en cada grupo: ya no queda nada que <em>X</em> pueda predecir.</li>
+    <li><strong>Mejor predictor lineal</strong> (pág. 44). Si te limitas a rectas, <em>h</em>(<em>X</em>) = <em>a</em> + <em>bX</em>, la mejor pendiente es <em>b</em>* = Cov(<em>X</em>, <em>Y</em>) / Var(<em>X</em>). Si la FEC es una recta, las dos coinciden. Si no lo es, la recta solo la aproxima.</li>
+  </ol>
+
+  <figure class="lab" id="demo-techo">
+    <p class="lab__titulo">Laboratorio 11 · La distribución «techo» de la clase</p>
+    <p class="lab__guia">Págs. 35, 42 y 45: la densidad conjunta es <em>f</em>(<em>x</em>, <em>y</em>) = <em>x</em> + <em>y</em> en el cuadrado de 0 a 1. Mueve <em>x</em> y compara las dos predicciones.</p>
+    <canvas id="techo-lienzo" aria-label="FEC curva y mejor predictor lineal"></canvas>
+    <div class="leyenda"><span style="--c:var(--g-serie1)">FEC: E[Y | X = x] = (3x + 2) / (6x + 3)</span><span style="--c:var(--g-serie2)">Mejor recta: 7/11 − x/11</span></div>
+    <div class="lab__controles"><div class="lab__control"><label for="techo-x">x =</label><input type="range" id="techo-x" min="0" max="1" step="0.01" value="0.2"><output id="techo-x-out">0,20</output></div></div>
+    <p class="lab__lectura" id="techo-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 3 · Esperanza condicional">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>Una <strong>variable aleatoria</strong> convierte resultados en números. La <strong>esperanza</strong> es su promedio a largo plazo, ponderado por las probabilidades.</li>
+      <li>La densidad no es una probabilidad: la probabilidad es el <strong>área</strong> bajo la densidad.</li>
+      <li>La <strong>esperanza condicional</strong> E[Y | X = x] es la media de Y en el grupo con X = x. La FEC da esa media para cada grupo.</li>
+      <li>Con pérdida cuadrática, <strong>la FEC es la mejor predicción posible usando X</strong>. Machine learning busca aproximarla.</li>
+      <li>Y = E[Y | X] + ε, con E[ε | X] = 0: lo que queda fuera de la FEC no se puede predecir con X.</li>
+      <li>E[Y] = E[E[Y | X]]: la media general es el promedio ponderado de las medias por grupo.</li>
+      <li>El mejor predictor lineal tiene pendiente Cov(X, Y) / Var(X). <strong>Correlación cero no significa independencia</strong>: puede haber un patrón que una recta no ve.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ E[Y \mid X = x] = \sum_{y} y\; p(y \mid x), \qquad p(y \mid x) = \frac{p(x, y)}{p(x)} \]</div>
+    <div class="formula-grande">\[ E[Y \mid X] = \arg\min_{h(X)}\; E\big[(Y - h(X))^2\big] \qquad Y = E[Y \mid X] + \varepsilon,\quad E[\varepsilon \mid X] = 0 \]</div>
+    <div class="formula-grande">\[ b^{*} = \frac{\operatorname{Cov}(X, Y)}{\operatorname{Var}(X)} \qquad\qquad E[Y] = E\big[\,E[Y \mid X]\,\big] \]</div>
+    <p class="lee">la esperanza de <em>Y</em> dado que <em>X</em> vale <em>x</em> es la suma de cada valor de <em>Y</em> por su probabilidad dentro del grupo. Esa función es la que minimiza el error cuadrático esperado.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(p(x, y)\)</td><td>«pe de equis, ye»</td><td>La probabilidad conjunta: cada celda de la tabla de los dados.</td></tr>
+        <tr><td>\(p(x)\)</td><td>«pe de equis»</td><td>La probabilidad marginal: la suma de una columna.</td></tr>
+        <tr><td>\(p(y\mid x)\)</td><td>«pe de ye dado equis»</td><td>La probabilidad condicional: cada celda dividida entre el total de su columna.</td></tr>
+        <tr><td>\(\arg\min_{h(X)}\)</td><td>«la función h que minimiza»</td><td>Entre todas las reglas de predicción posibles, la que da el menor error.</td></tr>
+        <tr><td>\(\varepsilon\)</td><td>«épsilon»</td><td>El residuo: lo que la FEC no predice. Ojo: no es la ε del límite. La misma letra griega sirve para dos cosas distintas.</td></tr>
+        <tr><td>\(\operatorname{Cov}(X,Y)\)</td><td>«covarianza»</td><td>Mide si <em>X</em> e <em>Y</em> suben juntas (positiva) o en sentidos contrarios (negativa). Solo ve relaciones en línea recta.</td></tr>
+        <tr><td>\(\operatorname{Var}(X)\)</td><td>«varianza»</td><td>Mide cuánto se dispersa <em>X</em> alrededor de su media.</td></tr>
+        <tr><td>\(b^{*}\)</td><td>«be estrella»</td><td>El mejor valor de la pendiente <em>b</em>.</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>ML1, págs. 21–45: espacio de probabilidad (21–22), condicional e independencia (23–24), Bayes (25–26), variables aleatorias, distribución y esperanza (27–29), conjuntas y condicionales (30–31), ejemplos (32–35), esperanzas iteradas (36) y propiedades de la FEC (37–45). La figura de la pág. 34 es de Angrist y Pischke (2009): la FEC del salario semanal (en logaritmos) según los años de educación, con el censo de EE. UU. de 1980. La figura de las págs. 42 y 45 es la del laboratorio 11.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 6: Parte 4. Confiar en la muestra
+     Insumo:    la simulación binomial de la clase (págs. 54-56)
+     Resultado: ley de los grandes números, teorema del límite central y el principio ERM
+     ============================================================ -->
+<section class="parte" id="p4">
+<div class="contenedor">
+  <p class="parte__num">Parte 4</p>
+  <h2>Confiar en la muestra</h2>
+  <p class="parte__pregunta">¿Por qué basta con una parte de los datos?</p>
+
+  <p>Una encuestadora entrevista a unas 1 200 personas y habla de todo el país. Un modelo aprende con una muestra y después se usa con casos nuevos. Las dos cosas funcionan gracias a dos teoremas: la <strong>ley de los grandes números</strong> y el <strong>teorema del límite central</strong>.</p>
+  <p>Los dos teoremas piden una <strong>muestra aleatoria</strong> (pág. 48): <em>n</em> observaciones independientes que vienen de la misma distribución. Se abrevia <strong>i.i.d.</strong>: independientes e idénticamente distribuidas. Un <strong>estadístico</strong> es un resumen de la muestra, como su promedio.</p>
+
+  <figure class="lab lab--ancho" id="demo-tcl">
+    <p class="lab__titulo">Laboratorio 12 · La simulación de la clase</p>
+    <p class="lab__guia">Cada asegurado tiene 5 % de probabilidad de hospitalizarse. Tomas una muestra de <em>N</em> asegurados y calculas qué porcentaje se hospitalizó. A la izquierda, una sola muestra que crece. A la derecha, 1 000 muestras de tamaño <em>N</em>.</p>
+    <div class="lab__dos">
+      <canvas id="tcl-lgn" aria-label="Promedio acumulado de una muestra que crece"></canvas>
+      <canvas id="tcl-hist" aria-label="Histograma de mil promedios muestrales"></canvas>
+    </div>
+    <div class="leyenda"><span style="--c:var(--g-serie1)">Promedio de la muestra</span><span style="--c:var(--g-serie4)">Valor real: 5 %</span><span style="--c:var(--g-serie2)">Curva normal que predice el teorema</span></div>
+    <div class="lab__controles">
+      <div class="lab__control" role="group" aria-label="Tamaño de cada muestra"><span class="suave">N =</span>
+        <button class="boton boton--hueco" type="button" data-n="10" aria-pressed="true">10</button>
+        <button class="boton boton--hueco" type="button" data-n="50" aria-pressed="false">50</button>
+        <button class="boton boton--hueco" type="button" data-n="200" aria-pressed="false">200</button>
+        <button class="boton boton--hueco" type="button" data-n="2000" aria-pressed="false">2 000</button>
+      </div>
+      <button class="boton" type="button" id="tcl-sortear">Sortear de nuevo</button>
+    </div>
+    <p class="lab__lectura" id="tcl-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="4.1">
+    <p class="caja__titulo">Reto 4.1</p>
+    <p>Pasa de <em>N</em> = 50 a <em>N</em> = 2 000. ¿Qué le pasa al histograma de la derecha?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-correcta>Se hace más angosto y toma forma de campana</button>
+      <button class="opcion" type="button" data-pista="Mira dónde está el centro en los dos casos: cerca de 5 %.">Se mueve hacia la derecha</button>
+      <button class="opcion" type="button" data-pista="Compara la lectura: el ancho cambia mucho.">No cambia</button>
+    </div>
+    <p class="respuesta">Correcto. El centro no se mueve: siempre queda cerca de 5 % (ley de los grandes números). El ancho se reduce en proporción a 1/√<em>N</em>: con 40 veces más datos, el ancho baja a la sexta parte, más o menos (√40 ≈ 6,3). Y la forma se vuelve una campana, aunque cada dato solo vale 0 o 1 (teorema del límite central).</p>
+  </aside>
+
+  <h3>Por qué esto sostiene al machine learning</h3>
+  <p>El modelo quiere la menor <strong>pérdida esperada</strong>: el error promedio sobre todos los casos posibles, incluidos los que todavía no existen. Pero solo puede calcular la <strong>pérdida empírica</strong>: el error promedio en su muestra. La ley de los grandes números garantiza que, con muchos datos, los dos promedios se acercan. Vapnik llamó a esta estrategia <strong>minimización del riesgo empírico</strong> (ERM, por sus siglas en inglés). Por eso, en machine learning, más datos suele ser mejor.</p>
+
+  <aside class="caja caja--filosofia">
+    <p class="caja__titulo">Puente con la filosofía: la ley de los grandes números no resuelve a Hume</p>
+    <p>Hume preguntó qué justifica esperar que el futuro se parezca al pasado. La ley de los grandes números no responde esa pregunta: la supone. Exige que los datos nuevos vengan de la <em>misma</em> distribución que los viejos (la «i.d.» de i.i.d.). Si el mundo cambia —una pandemia, una reforma, el cierre de un hospital—, el modelo entrenado con el pasado puede fallar. Raval, Rosenbaum y Wilson (2019), una lectura del curso, estudian justo eso: cómo predicen los algoritmos la elección de hospital cuando un desastre cierra hospitales.</p>
+  </aside>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 4 · Confiar en la muestra">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li><strong>i.i.d.</strong>: datos independientes que vienen de la misma distribución.</li>
+      <li><strong>Ley de los grandes números</strong>: el promedio de la muestra se acerca a la media real cuando <em>N</em> crece.</li>
+      <li><strong>Teorema del límite central</strong>: el promedio de la muestra se distribuye como una campana (normal) alrededor de la media real, con un ancho proporcional a σ/√<em>N</em>.</li>
+      <li><strong>ERM</strong>: minimizar la pérdida en la muestra funciona porque, con <em>N</em> grande, se parece a la pérdida en la población. Supone que el futuro viene de la misma distribución.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \bar X_N = \frac{1}{N}\sum_{i=1}^{N} X_i \;\xrightarrow{\;p\;}\; \mu \qquad\text{es decir}\qquad \lim_{N\to\infty} P\big(|\bar X_N - \mu| < \varepsilon\big) = 1 \]</div>
+    <div class="formula-grande">\[ \frac{\sqrt{N}\,\big(\bar X_N - \mu\big)}{\sigma} \;\xrightarrow{\;d\;}\; \mathcal{N}(0,\,1) \]</div>
+    <p class="lee">el promedio de la muestra converge en probabilidad a la media real. Y la distancia entre los dos, multiplicada por la raíz de <em>N</em> y dividida entre σ, se distribuye cada vez más como una normal estándar.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th><th>En el laboratorio</th></tr></thead>
+      <tbody>
+        <tr><td>\(X_i\)</td><td>«equis sub i»</td><td>El dato del caso <em>i</em>.</td><td>1 si se hospitalizó, 0 si no</td></tr>
+        <tr><td>\(\bar X_N\)</td><td>«equis barra sub ene»</td><td>El promedio de la muestra de tamaño <em>N</em>.</td><td>El porcentaje hospitalizado en la muestra</td></tr>
+        <tr><td>\(\mu\)</td><td>«mu»</td><td>La media real: la esperanza de <em>X</em>.</td><td>0,05</td></tr>
+        <tr><td>\(\sigma\)</td><td>«sigma»</td><td>La desviación estándar de un dato: su dispersión típica. \(\sigma^2\) es la varianza.</td><td>\(\sqrt{0{,}05 \times 0{,}95} \approx 0{,}218\)</td></tr>
+        <tr><td>\(\xrightarrow{p}\)</td><td>«converge en probabilidad»</td><td>La probabilidad de quedar lejos de μ (a más de ε) se hace cero.</td><td>La curva de la izquierda</td></tr>
+        <tr><td>\(\xrightarrow{d}\)</td><td>«converge en distribución»</td><td>La forma del histograma se acerca a una curva fija.</td><td>El histograma de la derecha</td></tr>
+        <tr><td>\(\mathcal{N}(0,1)\)</td><td>«normal cero, uno»</td><td>La campana con centro 0 y desviación estándar 1.</td><td>La curva ámbar, reescalada</td></tr>
+        <tr><td>\(N\to\infty\)</td><td>«ene tiende a infinito»</td><td>Lo que pasa cuando la muestra crece sin límite.</td><td></td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>ML1, pág. 48 (muestra aleatoria), págs. 51–53 (convergencia, ley de los grandes números, límite central) y 54–56 (simulación). En la pág. 51, a la expresión \(P(|X_n - a|) \to 0\) le falta «&gt; ε» dentro del paréntesis: la forma completa es \(P(|X_n - a| > \varepsilon) \to 0\). Los histogramas de la clase muestran el promedio menos 0,05; aquí ves el promedio sin restar.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 7: Parte 5. Predecir o explicar
+     Insumo:    el ejemplo de la Contraloría (notas de clase) y Breiman (2001)
+     Resultado: las dos culturas, un clasificador de preguntas y la comparación de objetivos
+     ============================================================ -->
+<section class="parte" id="p5">
+<div class="contenedor">
+  <p class="parte__num">Parte 5</p>
+  <h2>Predecir o explicar</h2>
+  <p class="parte__pregunta">¿Cuándo uso machine learning y cuándo econometría?</p>
+
+  <p>La Contraloría tiene auditores para 100 municipios, pero el país tiene más de 1 800 distritos. Tiene miles de variables del SIAF: gasto por rubro, consultorías, licencias, personal, serenazgo. Puede hacer dos preguntas con los mismos datos:</p>
+  <ul>
+    <li><strong>Pregunta A</strong>: ¿qué distritos debe auditar primero? Es una pregunta de <strong>predicción</strong>. No importa por qué un distrito tiene más riesgo; importa ordenar bien a los 1 800. Aquí sirve el machine learning: usa todas las variables y encuentra patrones que nadie especificó. Ash, Galletta y Giommoni (2020), una lectura del curso, hacen esta pregunta con municipios de Brasil.</li>
+    <li><strong>Pregunta B</strong>: ¿el canon minero causa más corrupción? Es una pregunta <strong>causal</strong>. Quieres saber qué pasa con la corrupción si cambias el canon. Necesitas un parámetro interpretable y sin sesgo. Aquí sirve la econometría.</li>
+  </ul>
+
+  <aside class="caja caja--reto" data-reto="5.1" id="reto-culturas">
+    <p class="caja__titulo">Reto 5.1 · Clasifica cada pregunta</p>
+    <ol class="clasifica">
+      <li>¿Qué asegurados con diabetes se hospitalizarán el próximo trimestre?
+        <div class="opciones"><button class="opcion" type="button" data-correcta>Predecir (ML)</button><button class="opcion" type="button" data-pista="No preguntas qué pasaría si cambias algo: solo quién tiene más riesgo.">Explicar una causa</button></div>
+        <p class="respuesta">Predecir: solo importa ordenar bien a los asegurados por riesgo.</p></li>
+      <li>¿Un programa de seguimiento telefónico reduce las hospitalizaciones?
+        <div class="opciones"><button class="opcion" type="button" data-pista="La pregunta es qué pasa si aplicas el programa: eso es un efecto causal.">Predecir (ML)</button><button class="opcion" type="button" data-correcta>Explicar una causa</button></div>
+        <p class="respuesta">Causa: quieres el efecto del programa, no solo una predicción.</p></li>
+      <li>¿Cuánto aumenta el salario con un año más de educación?
+        <div class="opciones"><button class="opcion" type="button" data-pista="Buscas el valor de un parámetro interpretable (β₁ en la ecuación de Mincer).">Predecir (ML)</button><button class="opcion" type="button" data-correcta>Explicar una causa</button></div>
+        <p class="respuesta">Causa: es el ejemplo clásico de la cultura de la modelación (Coronado, 2026, sec. 1.3.1).</p></li>
+      <li>¿Este correo es spam?
+        <div class="opciones"><button class="opcion" type="button" data-correcta>Predecir (ML)</button><button class="opcion" type="button" data-pista="Al filtro no le importa por qué el correo es spam.">Explicar una causa</button></div>
+        <p class="respuesta">Predecir: el filtro se juzga por sus aciertos con correos nuevos.</p></li>
+      <li>¿Qué palabra escribirá ChatGPT a continuación?
+        <div class="opciones"><button class="opcion" type="button" data-correcta>Predecir (ML)</button><button class="opcion" type="button" data-pista="Repasa la parte 0: el modelo calcula probabilidades, no explica.">Explicar una causa</button></div>
+        <p class="respuesta">Predecir: es la tarea de un modelo de lenguaje.</p></li>
+      <li>¿Las transferencias de un programa social aumentan la matrícula escolar?
+        <div class="opciones"><button class="opcion" type="button" data-pista="La palabra «aumentan» pide un efecto: qué pasa si das la transferencia.">Predecir (ML)</button><button class="opcion" type="button" data-correcta>Explicar una causa</button></div>
+        <p class="respuesta">Causa: es una evaluación de impacto.</p></li>
+    </ol>
+    <p class="respuesta" id="culturas-ok">Seis de seis. Una pista para el futuro: si la pregunta dice «¿qué pasa si cambio…?», «¿cuánto aumenta…?» o «¿funciona el programa…?», es causal. Si dice «¿quién?», «¿cuál?», «¿dónde primero?» o «¿qué pasará?», es de predicción.</p>
+  </aside>
+
+  <div class="duo">
+    <div>
+      <h4>Cultura de la modelación (econometría)</h4>
+      <ul>
+        <li>Asume una forma para la relación; por ejemplo, una recta.</li>
+        <li>Cada parámetro tiene una interpretación: sabemos qué es β₁.</li>
+        <li>La interpretación exige estimadores sin sesgo.</li>
+        <li>Más datos no siempre es mejor.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Cultura algorítmica (machine learning)</h4>
+      <ul>
+        <li>No asume la forma: deja que los datos la muestren.</li>
+        <li>Capta patrones complejos e inesperados.</li>
+        <li>Sus parámetros no tienen una interpretación directa.</li>
+        <li>Se juzga por su error en datos nuevos. Más datos suele ser mejor.</li>
+      </ul>
+    </div>
+  </div>
+
+  <p><strong>Cómo reconocen patrones los expertos.</strong> En clase se citó a Herbert Simon. Chase y Simon (1973) mostraron tableros de ajedrez por unos segundos a maestros y a principiantes. Con posiciones de partidas reales, los maestros recordaban casi todas las piezas. Con piezas puestas al azar, recordaban casi tan poco como los principiantes. Los maestros no tienen mejor memoria: reconocen <strong>patrones</strong> aprendidos en miles de partidas. Un modelo de machine learning aprende de la misma manera: de muchos casos, sin reglas explícitas.</p>
+
+  <aside class="caja caja--filosofia">
+    <p class="caja__titulo">Puente con la filosofía: predecir sin explicar, y el efecto Rashomon</p>
+    <p>Para Hempel, explicar y predecir eran la misma operación lógica: una buena explicación habría permitido predecir el hecho (la tesis de la simetría). El machine learning rompe esa simetría: predice muy bien sin ofrecer una explicación.</p>
+    <p>Breiman (2001, sec. 8) añade un problema con nombre de película: el <strong>efecto Rashomon</strong>. En el filme de Kurosawa (1950), cuatro testigos cuentan el mismo crimen de cuatro maneras distintas, todas verosímiles. Del mismo modo, muchos modelos distintos logran casi el mismo error, pero cada uno «cuenta» una historia distinta sobre qué variables importan. Por eso un buen ajuste no basta para afirmar una causa.</p>
+  </aside>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 5 · Predecir o explicar">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li><strong>Predicción</strong>: «¿qué pasará?» o «¿quién primero?» → machine learning. Se juzga por el error en casos nuevos.</li>
+      <li><strong>Causalidad</strong>: «¿qué pasa si cambio X?» → econometría (inferencia causal). Se juzga por la ausencia de sesgo del parámetro.</li>
+      <li>Un modelo que predice bien <strong>no prueba</strong> que una variable cause el resultado.</li>
+      <li>Las dos culturas son complementarias, no rivales (Coronado, 2026, cap. 1).</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \text{ML:}\quad \hat f = \arg\min_{f \in \mathcal{F}}\; E\big[\ell\big(f(x),\,y\big)\big] \]</div>
+    <div class="formula-grande">\[ \text{Inferencia causal:}\quad \hat\theta = \arg\min_{\theta}\; E\big[\ell\big(f(x, \theta),\,y\big)\big] \quad\text{y además}\quad E[\hat\theta] = \theta \]</div>
+    <p class="lee">machine learning elige, entre todas las funciones de la familia 𝓕, la que da la menor pérdida esperada. La inferencia causal elige el parámetro θ con la menor pérdida y exige además que, en promedio, el estimador acierte el valor verdadero.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(\hat f\)</td><td>«efe sombrero»</td><td>La función estimada. El sombrero (^) marca lo que sale de los datos.</td></tr>
+        <tr><td>\(\mathcal{F}\)</td><td>«efe caligráfica»</td><td>La familia de funciones permitidas; por ejemplo, todos los árboles de decisión o todas las redes de cierto tamaño.</td></tr>
+        <tr><td>\(f \in \mathcal{F}\)</td><td>«efe pertenece a efe caligráfica»</td><td>Busca solo entre las funciones de esa familia.</td></tr>
+        <tr><td>\(\theta\)</td><td>«theta»</td><td>El parámetro de interés; por ejemplo, el efecto de un año de educación sobre el salario.</td></tr>
+        <tr><td>\(\hat\theta\)</td><td>«theta sombrero»</td><td>La estimación de θ con los datos.</td></tr>
+        <tr><td>\(E[\hat\theta] = \theta\)</td><td>«la esperanza de theta sombrero es theta»</td><td><strong>Insesgadez</strong>: si repitieras el estudio muchas veces con muestras nuevas, el promedio de las estimaciones daría el valor verdadero. La diapositiva 50 escribe E(θ) = θ: el sombrero está implícito.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Vapnik demostró que el problema de ML tiene solución bajo ciertas condiciones: es el principio de minimización del riesgo empírico de la parte 4 (pág. 50).</p>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>ML1, págs. 46–47 (las dos culturas) y 50 (objetivo de ML frente a objetivo causal). Notas del 22-11: el ejemplo de la Contraloría y el SIAF, Herbert Simon y el ajedrez, Mullainathan y Spiess (2017), y la indicación «leer el paper de Leo Breiman».</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 8: Cierre
+     Insumo:    las dos preguntas del inicio
+     Resultado: las respuestas completas, con el vocabulario de la lección
+     ============================================================ -->
+<section class="parte" id="cierre">
+<div class="contenedor">
+  <p class="parte__num">Cierre</p>
+  <h2>Ahora puedes responder las dos preguntas</h2>
+
+  <div class="duo">
+    <div>
+      <h4>¿Cómo elige ChatGPT la próxima palabra?</h4>
+      <p>GPT es una función con miles de millones de parámetros. Convierte el texto previo en vectores (<em>embeddings</em>) y entrega una <strong>probabilidad condicional</strong> para cada palabra posible: P(palabra | texto anterior) (parte 3). Sus parámetros se eligieron para minimizar una <strong>pérdida</strong> que castiga al modelo cuando da poca probabilidad a la palabra que de verdad seguía (parte 1). Esa pérdida bajó con <strong>descenso de gradiente por minilotes</strong>, a lo largo de billones de palabras (parte 2). Funciona con textos nuevos porque aprendió de una muestra enorme (parte 4). Y predice sin explicar: nadie sabe con detalle qué hace cada parámetro (parte 5).</p>
+    </div>
+    <div>
+      <h4>¿Cómo recomienda Netflix?</h4>
+      <p>Cada persona y cada película son <strong>vectores</strong> en un espacio de gustos. La nota predicha es una función de los dos vectores (parte 2). Las coordenadas se aprenden al minimizar la <strong>pérdida cuadrática</strong> entre las notas predichas y las notas reales (parte 1), con <strong>descenso de gradiente estocástico</strong> (parte 2). La nota predicha es una estimación de la <strong>esperanza condicional</strong> de tu nota, dado lo que el sistema sabe de ti (parte 3). El objetivo es predecir, no explicar por qué te gusta una película (parte 5).</p>
+    </div>
+  </div>
+
+  <p><strong>Lo que viene.</strong> La práctica dirigida del 25 de noviembre aplica el descenso de gradiente en Python y simula el <strong>sobreajuste</strong>: un modelo que memoriza la muestra y falla con casos nuevos. La clase del 28 de noviembre presenta los modelos lineales, la regularización y la validación cruzada.</p>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 9: Ficha de repaso
+     Insumo:    todas las cajas «Recuerda» de la página
+     Resultado: una hoja de repaso que el JavaScript arma sola y que puedes imprimir
+     ============================================================ -->
+<section class="parte" id="ficha">
+<div class="contenedor ancho">
+  <p class="parte__num">Ficha de repaso</p>
+  <h2>Todo lo que debes recordar, en una sola vista</h2>
+  <p class="suave">Esta ficha copia todas las cajas «Recuerda» de la lección.</p>
+  <p><button class="boton" type="button" id="imprimir-ficha">Imprimir la ficha</button>
+     <button class="boton boton--hueco" type="button" id="borrar-avance" title="Borra los retos resueltos guardados en este navegador">Borrar mis respuestas</button></p>
+  <div class="ficha" id="ficha-contenido"></div>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 10: Glosario de símbolos y lecturas
+     Insumo:    la notación de las diapositivas ML1 y la bibliografía del curso
+     Resultado: una tabla para consultar cualquier símbolo y la lista de lecturas con sus páginas
+     ============================================================ -->
+<section class="parte" id="simbolos">
+<div class="contenedor">
+  <p class="parte__num">Consulta</p>
+  <h2>Glosario de símbolos</h2>
+  <p>Todos los símbolos de la clase ML1, en orden de aparición.</p>
+  <div class="tabla-desliza"><table class="simbolos">
+    <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+    <tbody>
+      <tr><td>\(\forall\)</td><td>«para todo»</td><td>Cuantificador universal, como en lógica.</td></tr>
+      <tr><td>\(\exists\)</td><td>«existe»</td><td>Cuantificador existencial.</td></tr>
+      <tr><td>\(\iff\)</td><td>«si y solo si»</td><td>Equivalencia: cada lado implica el otro.</td></tr>
+      <tr><td>\(\to\)</td><td>«tiende a», «converge a»</td><td>Se acerca cada vez más. En \(f:\mathbb{R}^n\to\mathbb{R}\) significa «va de… a…».</td></tr>
+      <tr><td>\(:=\)</td><td>«se define como»</td><td>Fija el significado de un símbolo nuevo.</td></tr>
+      <tr><td>\(\lim\)</td><td>«límite»</td><td>El valor al que se acerca una expresión.</td></tr>
+      <tr><td>\(\varepsilon\)</td><td>«épsilon»</td><td>Una tolerancia pequeña (límite) o el residuo (FEC), según el contexto.</td></tr>
+      <tr><td>\(f'(x),\ \frac{df}{dx}\)</td><td>«efe prima», «de efe, de equis»</td><td>La derivada: la pendiente en <em>x</em>.</td></tr>
+      <tr><td>\(\mathbb{R},\ \mathbb{R}^n\)</td><td>«erre», «erre ene»</td><td>Los números reales; las listas de <em>n</em> números reales.</td></tr>
+      <tr><td>\(\partial\)</td><td>«de parcial»</td><td>Derivada parcial: se mueve una sola entrada.</td></tr>
+      <tr><td>\(\nabla\)</td><td>«nabla»</td><td>El gradiente: la lista de derivadas parciales.</td></tr>
+      <tr><td>\(\gamma\)</td><td>«gamma»</td><td>El tamaño del paso del descenso de gradiente.</td></tr>
+      <tr><td>\(\theta\)</td><td>«theta»</td><td>Los parámetros del modelo, o un parámetro de interés.</td></tr>
+      <tr><td>\({}^{\top}\)</td><td>«transpuesta»</td><td>Pasa un vector de fila a columna.</td></tr>
+      <tr><td>\(\min,\ \arg\min\)</td><td>«mínimo», «argumento que minimiza»</td><td>El valor más bajo; el lugar donde se alcanza.</td></tr>
+      <tr><td>\(\Omega,\ \mathcal{A},\ P\)</td><td>«omega», «a caligráfica», «pe»</td><td>Resultados posibles, eventos y medida de probabilidad.</td></tr>
+      <tr><td>\(\cap,\ \cup,\ \emptyset,\ \in\)</td><td>«intersección», «unión», «vacío», «pertenece a»</td><td>Operaciones y relaciones entre conjuntos.</td></tr>
+      <tr><td>\(P(A\mid B)\)</td><td>«pe de A dado B»</td><td>Probabilidad condicional. Las diapositivas escriben P(A/B).</td></tr>
+      <tr><td>\(E[X]\)</td><td>«esperanza de equis»</td><td>El promedio a largo plazo.</td></tr>
+      <tr><td>\(E[Y\mid X]\)</td><td>«esperanza de ye dado equis»</td><td>La media de <em>Y</em> en cada grupo de <em>X</em>: la FEC.</td></tr>
+      <tr><td>\(\sum,\ \int\)</td><td>«sumatoria», «integral»</td><td>Suma de términos; suma continua (área).</td></tr>
+      <tr><td>\(\mu,\ \sigma,\ \sigma^2\)</td><td>«mu», «sigma», «sigma cuadrado»</td><td>Media, desviación estándar y varianza.</td></tr>
+      <tr><td>\(\operatorname{Cov},\ \operatorname{Var}\)</td><td>«covarianza», «varianza»</td><td>Movimiento conjunto de dos variables; dispersión de una variable.</td></tr>
+      <tr><td>\(Y \sim D(\mu,\sigma^2)\)</td><td>«ye se distribuye según D con media mu y varianza sigma cuadrado»</td><td>Describe de qué distribución viene una variable (pág. 37).</td></tr>
+      <tr><td>\(\bar X_N\)</td><td>«equis barra sub ene»</td><td>El promedio de una muestra de tamaño <em>N</em>.</td></tr>
+      <tr><td>\(\xrightarrow{p},\ \xrightarrow{d}\)</td><td>«converge en probabilidad», «en distribución»</td><td>El valor se acerca; la forma de la distribución se acerca.</td></tr>
+      <tr><td>\(\mathcal{N}(0,1)\)</td><td>«normal estándar»</td><td>La campana con media 0 y desviación estándar 1.</td></tr>
+      <tr><td>i.i.d.</td><td>«i, i, de»</td><td>Independientes e idénticamente distribuidas.</td></tr>
+      <tr><td>\(\hat{\ }\)</td><td>«sombrero»</td><td>Marca un valor estimado con los datos: \(\hat f\), \(\hat\theta\).</td></tr>
+      <tr><td>\(\ell,\ R_{\text{emp}}\)</td><td>«ele», «riesgo empírico»</td><td>La función de pérdida; la pérdida promedio en la muestra.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="lecturas" style="margin-top:2em">Lecturas</h2>
+  <p>Las lecturas de esta clase, con las secciones que corresponden a cada parte:</p>
+  <ul class="lecturas">
+    <li><strong>Coronado, P. (2026).</strong> <em>Machine Learning para las Ciencias Sociales: con aplicaciones en Python</em> (Material de Enseñanza n.º 16). Departamento de Economía, PUCP. Cap. 1 (las dos culturas, págs. 1–13) y cap. 2 (cálculo, optimización y probabilidad, págs. 14–34). <span class="suave">Partes 1 a 5.</span></li>
+    <li><strong>Deisenroth, M. P., Faisal, A. A. y Ong, C. S. (2020).</strong> <em>Mathematics for Machine Learning</em>. Cambridge University Press. Secs. 5.1–5.3 (derivadas y gradientes), 6.1–6.4 (probabilidad y Bayes) y 7.1 (descenso de gradiente; el ejemplo 7.1 es el de la clase). <span class="suave">Partes 2 y 3.</span></li>
+    <li><strong>James, G., Witten, D., Hastie, T., Tibshirani, R. y Taylor, J. (2023).</strong> <em>An Introduction to Statistical Learning with Applications in Python</em>. Springer. Sec. 2.1 (¿para qué estimar <em>f</em>? predicción e inferencia) y 2.2.1 (medir la calidad del ajuste). <span class="suave">Partes 1 y 5.</span></li>
+    <li><strong>Breiman, L. (2001).</strong> Statistical Modeling: The Two Cultures. <em>Statistical Science</em>, 16(3), 199–231. Sec. 8 sobre el efecto Rashomon. <span class="suave">Parte 5.</span></li>
+    <li><strong>Athey, S. e Imbens, G. W. (2019).</strong> Machine Learning Methods That Economists Should Know About. <em>Annual Review of Economics</em>, 11, 685–725. Secs. 1 y 2. <span class="suave">Parte 5.</span></li>
+  </ul>
+  <p class="nota-pie">Otras fuentes citadas: Mitchell (1997), <em>Machine Learning</em>; Chase y Simon (1973), «Perception in chess», <em>Cognitive Psychology</em> 4; Mikolov y otros (2013), «Efficient Estimation of Word Representations in Vector Space»; Koren, Bell y Volinsky (2009), «Matrix Factorization Techniques for Recommender Systems», <em>Computer</em> 42(8); Angrist y Pischke (2009), <em>Mostly Harmless Econometrics</em>; Ash, Galletta y Giommoni (2020); Raval, Rosenbaum y Wilson (2019); Mullainathan y Spiess (2017), <em>Journal of Economic Perspectives</em> 31(2).</p>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 11: Créditos y autorías
+     Insumo:    todas las fuentes usadas en la lección
+     Resultado: quién hizo cada material, qué se tomó de cada uno y bajo qué condiciones
+     ============================================================ -->
+<section class="parte" id="creditos">
+<div class="contenedor">
+  <p class="parte__num">Créditos</p>
+  <h2>Créditos y autorías</h2>
+  <p>Esta página es un material de estudio. No reemplaza a la clase ni a sus lecturas: las explica con otras palabras, con ejemplos y con laboratorios. No reproduce las diapositivas; cita sus páginas para que las consultes.</p>
+
+  <h3>Material del curso: la base de esta lección</h3>
+  <ul class="lecturas">
+    <li><strong>Pavel Coronado Castellanos</strong>, profesor del curso «Introducción a Machine Learning para Ciencias Sociales», Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública, Facultad de Ciencias Sociales, Pontificia Universidad Católica del Perú (PUCP), 2026. Asistente del curso: Anderson Águila.</li>
+    <li>Coronado, P. (2026). <em>Machine Learning para CSSS. Repaso estadístico y de optimización</em> (diapositivas ML1). PUCP. Toda la secuencia de temas, las definiciones y los ejemplos de esta lección siguen estas diapositivas.</li>
+    <li>Coronado, P. (2026). <em>Machine Learning: Introducción</em> (diapositivas «Intro ML»). Departamento de Economía y QLAB, PUCP. Fuente de la definición de Mitchell y de la historia del machine learning.</li>
+    <li>Coronado, P. (2026). <em>Machine Learning para las Ciencias Sociales: con aplicaciones en Python</em> (Material de Enseñanza n.º 16, versión 1.0). Departamento de Economía, PUCP. Caps. 1 y 2.</li>
+    <li>QLAB, Laboratorio de Inteligencia Artificial y Métodos Computacionales en Ciencias Sociales, PUCP.</li>
+    <li>Notas de la clase del 22 de noviembre de 2026, tomadas por Diego Sime: ejemplos de la Contraloría y el canon, de Herbert Simon y el ajedrez, y de los <em>embeddings</em>.</li>
+  </ul>
+
+  <h3>Ejemplos de la clase y su autoría original</h3>
+  <div class="tabla-desliza">
+  <table class="datos">
+    <thead><tr><th>Ejemplo en esta página</th><th>Dónde aparece en la clase</th><th>Autoría original</th></tr></thead>
+    <tbody>
+      <tr><td>Curva con dos valles (laboratorios 2 y 4)</td><td>ML1, pág. 10</td><td>Diapositivas del prof. Coronado</td></tr>
+      <tr><td>Descenso de gradiente en dos dimensiones, x₀ = (−3; −1) y γ = 0,085 (laboratorio 6)</td><td>ML1, págs. 13–15</td><td>Deisenroth, Faisal y Ong (2020), ejemplo 7.1 y figura 7.3</td></tr>
+      <tr><td>Lotes completos, minilotes y estocástico (laboratorio 7)</td><td>ML1, págs. 18–19</td><td>Diapositivas del prof. Coronado; datos del laboratorio simulados</td></tr>
+      <tr><td>Defecto genético y teorema de Bayes (laboratorio 9)</td><td>ML1, págs. 25–26</td><td>Diapositivas del prof. Coronado</td></tr>
+      <tr><td>Suma y diferencia de dos dados (laboratorio 10)</td><td>ML1, pág. 32</td><td>Diapositivas del prof. Coronado</td></tr>
+      <tr><td>Salario y años de educación</td><td>ML1, pág. 34</td><td>Angrist y Pischke (2009), figura 3.1.1</td></tr>
+      <tr><td>Distribución «techo» (laboratorio 11)</td><td>ML1, págs. 35, 42 y 45</td><td>Goldberger (1991), figura 5.1</td></tr>
+      <tr><td>Mejor número c y propiedades de la FEC</td><td>ML1, págs. 37–44</td><td>Diapositivas del prof. Coronado</td></tr>
+      <tr><td>Las dos culturas</td><td>ML1, págs. 46–47</td><td>Breiman (2001)</td></tr>
+      <tr><td>Simulación binomial (laboratorio 12)</td><td>ML1, págs. 54–56</td><td>Diapositivas del prof. Coronado</td></tr>
+      <tr><td>Definición de aprendizaje (parte 0)</td><td>Intro ML</td><td>Mitchell (1997)</td></tr>
+      <tr><td>Contraloría, canon y SIAF; Herbert Simon y el ajedrez</td><td>Clase del 22-11 (notas)</td><td>Ejemplos del prof. Coronado; estudio de Chase y Simon (1973)</td></tr>
+      <tr><td>Ecuación de Mincer</td><td>Manual, cap. 2</td><td>Mincer (1974)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Ejemplos propios de esta página</h3>
+  <p>Son de Diego Sime y Claude Code: la frase del laboratorio 0 y sus probabilidades (inventadas), los días de hospitalización del laboratorio 1, el juego del límite, el espacio de gustos (las coordenadas son inventadas; los títulos de las películas pertenecen a sus productores), los retos y las cajas «Puente con la filosofía».</p>
+
+  <h3>Datos</h3>
+  <p>Seguro Integral de Salud (SIS): base de asegurados activos con diabetes, publicada en la Plataforma Nacional de Datos Abiertos del Estado peruano (Presidencia del Consejo de Ministros). Los porcentajes de la parte 3 son cálculos preliminares propios, no cifras oficiales del SIS.</p>
+
+  <h3>Otras obras citadas</h3>
+  <ul class="lecturas">
+    <li>Angrist, J. D. y Pischke, J.-S. (2009). <em>Mostly Harmless Econometrics: An Empiricist's Companion</em>. Princeton University Press.</li>
+    <li>Ash, E., Galletta, S. y Giommoni, T. (2020). A Machine Learning Approach to Analyze and Support Anti-Corruption Policy. Documento de trabajo.</li>
+    <li>Berkeley, G. (1734). <em>The Analyst</em>.</li>
+    <li>Chase, W. G. y Simon, H. A. (1973). Perception in chess. <em>Cognitive Psychology</em>, 4(1), 55–81.</li>
+    <li>Goldberger, A. S. (1991). <em>A Course in Econometrics</em>. Harvard University Press.</li>
+    <li>Hempel, C. G. y Oppenheim, P. (1948). Studies in the Logic of Explanation. <em>Philosophy of Science</em>, 15(2), 135–175.</li>
+    <li>Hume, D. (1748). <em>Investigación sobre el entendimiento humano</em>.</li>
+    <li>Kahneman, D. y Tversky, A. (1973). On the psychology of prediction. <em>Psychological Review</em>, 80(4), 237–251.</li>
+    <li>Koren, Y., Bell, R. y Volinsky, C. (2009). Matrix Factorization Techniques for Recommender Systems. <em>Computer</em>, 42(8), 30–37.</li>
+    <li>Kurosawa, A. (director) (1950). <em>Rashomon</em> [película]. Daiei.</li>
+    <li>Mikolov, T., Chen, K., Corrado, G. y Dean, J. (2013). Efficient Estimation of Word Representations in Vector Space. arXiv:1301.3781.</li>
+    <li>Mincer, J. (1974). <em>Schooling, Experience, and Earnings</em>. NBER.</li>
+    <li>Mitchell, T. M. (1997). <em>Machine Learning</em>. McGraw-Hill.</li>
+    <li>Mullainathan, S. y Spiess, J. (2017). Machine Learning: An Applied Econometric Approach. <em>Journal of Economic Perspectives</em>, 31(2), 87–106.</li>
+    <li>Raval, D., Rosenbaum, T. y Wilson, N. E. (2019). How Do Machine Learning Algorithms Perform in Changing Environments? Evidence from Disaster Induced Hospital Closures. Documento de trabajo.</li>
+    <li>Rumelhart, D. E., Hinton, G. E. y Williams, R. J. (1986). Learning representations by back-propagating errors. <em>Nature</em>, 323, 533–536.</li>
+    <li>Vapnik, V. N. (1999), citado en ML1, pág. 50: principio de minimización del riesgo empírico (ERM).</li>
+  </ul>
+  <p class="nota-pie">Las cinco lecturas del curso están en la sección <a href="#lecturas">Lecturas</a>.</p>
+
+  <h3>Herramientas</h3>
+  <p>Fórmulas: <a href="https://katex.org/">KaTeX</a> (Khan Academy y colaboradores, licencia MIT). Tipografías: Newsreader (Production Type) y Schibsted Grotesk (Schibsted), licencia SIL Open Font License, vía Google Fonts. Gráficos: JavaScript propio, sin otras librerías.</p>
+
+  <h3>Elaboración y licencia</h3>
+  <p>Texto, diseño, laboratorios y código: Diego Sime con Claude Code (Anthropic), noviembre de 2026. La licencia MIT del repositorio cubre solo el código y el texto propios. Las diapositivas, el manual, las lecturas y las demás obras citadas pertenecen a sus autores y no se reproducen aquí.</p>
+</div>
+</section>
+
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <p>Aprendizaje de Machine Learning · Material de estudio basado en las clases del <strong>prof. Pavel Coronado Castellanos</strong> (curso «Introducción a Machine Learning para Ciencias Sociales», Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública, PUCP, 2026). Texto en lenguaje simple, según el estándar ASD-STE100 adaptado al español.</p>
+    <p>Elaborado por Diego Sime con Claude Code · <a href="#creditos">Créditos y autorías</a> · <a href="index.html">Volver al curso</a> · <a href="https://github.com/diegosimemirror/aprendizaje_ML">Código en GitHub</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
