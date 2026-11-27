@@ -306,6 +306,20 @@ function formula(el, tex, display) {
 // teX(0.05) → '0{,}05': coma decimal dentro de una fórmula, sin espacio extra.
 function teX(v, d) { return num(v, d).replace(',', '{,}').replace('−', '-').replace(/ /g, '\\,'); }
 
+// m('x^2') → la fórmula dibujada por KaTeX, lista para insertarla dentro de un texto.
+// Así las lecturas de los laboratorios usan la misma notación que el resto de la página.
+function m(tex) {
+  try { return window.katex ? window.katex.renderToString(tex, { throwOnError: false }) : tex; }
+  catch (e) { return tex; }
+}
+// frT(2, 6) → '\tfrac{1}{3}'; frT(0, 6) → '0'; frT(6, 6) → '1'. Fracción simplificada, en TeX.
+function frT(k, n) {
+  if (k === 0) return '0';
+  if (k === n) return '1';
+  const mcd = (a, b) => b ? mcd(b, a % b) : a, d = mcd(k, n);
+  return '\\tfrac{' + (k / d) + '}{' + (n / d) + '}';
+}
+
 function iniciarBarra() {
   const avance = document.getElementById('avance');
   const enlaces = Array.from(document.querySelectorAll('.barra__partes a'));
@@ -449,18 +463,36 @@ function iniciarRetos() {
 /* ============================================================
    PROCESO 3: Laboratorio 0 · Completa la frase (GPT)
    Insumo:    una frase incompleta y probabilidades inventadas
-   Resultado: barras con la probabilidad de cada palabra y 12 sorteos
+   Resultado: barras con la probabilidad de cada palabra; una ruleta que compara
+              «elegir siempre la más probable» con «sortear»; y 1 000 giros
    ============================================================ */
 function labGPT() {
   const caja = document.getElementById('demo-gpt'); if (!caja) return;
   const PALABRAS = [['riñones', 0.31], ['ojos', 0.24], ['nervios', 0.16], ['pies', 0.12], ['vasos', 0.09], ['otras palabras', 0.079], ['zapatos', 0.001]];
+  const COLORES = ['var(--g-serie1)', 'var(--g-serie3)', 'var(--g-serie2)', 'var(--g-serie4)', '#7c3aed', 'var(--g-eje)', '#111'];
   const OPCIONES = ['riñones', 'ojos', 'nervios', 'pies', 'zapatos'];
   const zonaOpciones = document.getElementById('gpt-opciones');
   const barras = document.getElementById('gpt-barras');
-  const controles = document.getElementById('gpt-controles');
+  const paso2 = document.getElementById('gpt-paso2');
   const hueco = document.getElementById('gpt-hueco');
   const generadas = document.getElementById('gpt-generadas');
-  let elegida = null;
+  const ruleta = document.getElementById('gpt-ruleta'), aguja = document.getElementById('gpt-aguja');
+  const comentario = document.createElement('p');
+  comentario.className = 'ui suave'; comentario.style.margin = '8px 0 0';
+  barras.after(comentario);
+  let girando = null;
+
+  // Ruleta: cada palabra ocupa un ancho igual a su probabilidad.
+  ruleta.innerHTML = PALABRAS.map((par, i) =>
+    '<span style="flex:0 0 ' + (100 * par[1]) + '%;background:' + COLORES[i] + '">' + (par[1] >= 0.085 ? par[0] : '') + '</span>').join('');
+  // girar: número al azar u entre 0 y 1 → palabra donde cae la aguja
+  function girar() {
+    const u = Math.random();
+    let acum = 0;
+    for (const par of PALABRAS) { acum += par[1]; if (u <= acum) return [par[0] === 'otras palabras' ? 'otra palabra' : par[0], u]; }
+    return [PALABRAS[0][0], u];
+  }
+  function moverAguja(u) { aguja.style.opacity = '1'; aguja.style.left = (100 * u) + '%'; }
 
   OPCIONES.forEach(p => {
     const b = document.createElement('button');
@@ -471,7 +503,6 @@ function labGPT() {
 
   // elegir: palabra del lector → barras con las probabilidades del «modelo»
   function elegir(palabra, boton) {
-    elegida = palabra;
     hueco.textContent = palabra;
     zonaOpciones.querySelectorAll('.opcion').forEach(o => o.classList.toggle('correcta', o === boton));
     barras.innerHTML = '';
@@ -482,27 +513,47 @@ function labGPT() {
         '<span class="pista"><span class="relleno"></span></span><span style="font-variant-numeric:tabular-nums">' + pct(par[1], par[1] < 0.01 ? 1 : 0) + '</span>';
       barras.appendChild(fila);
     });
-    barras.hidden = false; controles.hidden = false;
+    paso2.hidden = false;
     setTimeout(() => {
       barras.querySelectorAll('.relleno').forEach((r, i) => { r.style.width = (100 * PALABRAS[i][1] / 0.31) + '%'; });
     }, 40);
     const p = PALABRAS.find(x => x[0] === palabra)[1];
-    generadas.innerHTML = '<p class="ui suave" style="margin:6px 0 0">Tu palabra recibe ' + pct(p, p < 0.01 ? 1 : 0) +
-      (palabra === 'zapatos' ? '. El modelo aprendió que esa palabra casi nunca sigue a esta frase.' : '. Otras palabras también son razonables: el modelo reparte la probabilidad entre ellas.') + '</p>';
+    comentario.textContent = 'Tu palabra recibe ' + pct(p, p < 0.01 ? 1 : 0) +
+      (palabra === 'zapatos' ? '. El modelo aprendió que esa palabra casi nunca sigue a esta frase.' : '. Otras palabras también son razonables: el modelo reparte la probabilidad entre ellas.');
   }
 
-  // sortear: probabilidades → una palabra elegida al azar con esas probabilidades
-  function sortear() {
-    let u = Math.random(), acum = 0;
-    for (const par of PALABRAS) { acum += par[1]; if (u <= acum) return par[0] === 'otras palabras' ? 'otra palabra' : par[0]; }
-    return PALABRAS[0][0];
-  }
-  document.getElementById('gpt-generar').addEventListener('click', () => {
-    const lista = Array.from({ length: 12 }, sortear);
-    const conteo = {}; lista.forEach(p => { conteo[p] = (conteo[p] || 0) + 1; });
-    generadas.innerHTML = lista.map(p => '<span>' + p + '</span>').join('') +
-      '<p class="ui suave" style="margin:8px 0 0;width:100%">En 12 sorteos, «riñones» salió ' + (conteo['riñones'] || 0) +
-      ' veces. Pulsa otra vez: el resultado cambia. Así un GPT puede dar respuestas distintas a la misma pregunta.</p>';
+  // Modo 1: elegir siempre la más probable → la misma palabra 12 veces.
+  document.getElementById('gpt-siempre').addEventListener('click', () => {
+    clearInterval(girando); aguja.style.opacity = '0';
+    generadas.innerHTML = Array.from({ length: 12 }, () => '<span>riñones</span>').join('') +
+      '<p class="ui suave" style="margin:8px 0 0">Siempre «riñones». Cada vez que alguien escriba esta frase, el modelo completará lo mismo. Con frases largas, el texto se vuelve repetitivo y nunca aparecen otras respuestas razonables, como «ojos» o «nervios».</p>';
+  });
+  // Modo 2: girar la ruleta 12 veces, con la aguja a la vista.
+  document.getElementById('gpt-sortear').addEventListener('click', () => {
+    clearInterval(girando);
+    const lista = [];
+    generadas.innerHTML = '';
+    girando = setInterval(() => {
+      const r = girar(); lista.push(r[0]); moverAguja(r[1]);
+      generadas.innerHTML = lista.map(p => '<span>' + p + '</span>').join('');
+      if (lista.length >= 12) {
+        clearInterval(girando);
+        const n = lista.filter(p => p === 'riñones').length;
+        generadas.innerHTML += '<p class="ui suave" style="margin:8px 0 0">«Riñones» salió ' + n + ' de 12 veces; el resto, otras palabras razonables. Gira otra vez: el resultado cambia. Por eso un GPT puede dar respuestas distintas a la misma pregunta.</p>';
+      }
+    }, 260);
+  });
+  // Modo 3: 1 000 giros → cada palabra sale en una proporción cercana a su probabilidad.
+  document.getElementById('gpt-mil').addEventListener('click', () => {
+    clearInterval(girando); aguja.style.opacity = '0';
+    const conteo = {};
+    for (let i = 0; i < 1000; i++) { const p = girar()[0]; conteo[p] = (conteo[p] || 0) + 1; }
+    const filas = PALABRAS.map(par => {
+      const nombre = par[0] === 'otras palabras' ? 'otra palabra' : par[0], f = (conteo[nombre] || 0) / 1000;
+      return '<tr><td>' + par[0] + '</td><td class="num">' + pct(par[1], 1) + '</td><td class="num">' + pct(f, 1) + '</td></tr>';
+    }).join('');
+    generadas.innerHTML = '<table class="datos" style="max-width:420px"><thead><tr><th>Palabra</th><th class="num">Probabilidad</th><th class="num">Salió en 1 000 giros</th></tr></thead><tbody>' + filas + '</tbody></table>' +
+      '<p class="ui suave" style="margin:4px 0 0">Las dos columnas casi coinciden. Con muchos giros, la frecuencia se acerca a la probabilidad: es la ley de los grandes números de la parte 4.</p>';
   });
 }
 
@@ -557,9 +608,11 @@ function labPerdida() {
     g2.punto(c, L, { r: 6.5, color: ambar, borde: css('--papel-2') });
     g2.textoPx(num(L, 2), g2.X(c) + 9, g2.Y(L) - 10, { color: ambar, peso: 700, fondo: true });
 
-    lectura.innerHTML = 'Predicción <b>c = ' + num(c, 2) + ' días</b> · ' +
-      (modo === 'cuadratica' ? 'pérdida cuadrática' : 'pérdida absoluta') + ' promedio = <b>' + num(L, 2) + '</b>' +
-      ' · pacientes: ' + d.length + '. Busca el punto más bajo de la curva.';
+    const formulaL = modo === 'cuadratica' ? '\\frac{1}{' + d.length + '}\\sum_{i=1}^{' + d.length + '}(y_i - c)^2'
+                                           : '\\frac{1}{' + d.length + '}\\sum_{i=1}^{' + d.length + '}|y_i - c|';
+    lectura.innerHTML = 'Predicción ' + m('c = ' + teX(c, 2)) + ' días · ' +
+      (modo === 'cuadratica' ? 'pérdida cuadrática' : 'pérdida absoluta') + ' promedio: ' +
+      m('R_{\\text{emp}}(c) = ' + formulaL + ' = ' + teX(L, 2)) + '<br>Busca el punto más bajo de la curva.';
   }
 
   control.addEventListener('input', dibujar);
@@ -628,42 +681,86 @@ function labDerivada() {
     if (Math.abs(mTan) < 1) sentido = 'La curva está casi plana: estás cerca de un mínimo o de un máximo.';
     else if (mTan < 0) sentido = 'La pendiente es negativa: la curva baja hacia la derecha. Para bajar, avanza a la derecha.';
     else sentido = 'La pendiente es positiva: la curva sube hacia la derecha. Para bajar, retrocede a la izquierda.';
-    lectura.innerHTML = 'Pendiente de la secante = [f(x + h) − f(x)] / h = <b style="color:var(--g-serie1)">' + num(mSec, 2) + '</b> · ' +
-      'derivada f′(x) = <b style="color:var(--g-serie2)">' + num(mTan, 2) + '</b> · diferencia: ' + num(Math.abs(mSec - mTan), 2) + '<br>' + sentido;
+    lectura.innerHTML = '<b style="color:var(--g-serie1)">Pendiente de la secante:</b> ' +
+      m('\\frac{f(x+h) - f(x)}{h} = \\frac{f(' + teX(x + h, 2) + ') - f(' + teX(x, 2) + ')}{' + teX(h, 2) + '} = ' + teX(mSec, 2)) +
+      '<br><b style="color:var(--g-serie2)">Derivada (pendiente de la tangente):</b> ' + m("f'(" + teX(x, 2) + ') = ' + teX(mTan, 2)) +
+      ' · diferencia: ' + m(teX(Math.abs(mSec - mTan), 2)) + '<br>' + sentido;
   }
   cx.addEventListener('input', dibujar); ch.addEventListener('input', dibujar);
+  // Botón «Probar x = −2 y h = 2»: la secante engaña cuando h es grande.
+  document.querySelectorAll('[data-preparar="derivada"]').forEach(b => b.addEventListener('click', () => {
+    cx.value = b.dataset.x; ch.value = b.dataset.h; dibujar();
+    document.getElementById('demo-derivada').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }));
   alRedibujar(dibujar);
 }
 
+/* Laboratorio 3: el límite como juego, con las pendientes de las secantes del laboratorio 2.
+   Entrada: la tolerancia ε del escéptico. Salida: tu respuesta N y la comprobación. */
 function labLimite() {
   const lienzo = document.getElementById('limite-lienzo'); if (!lienzo) return;
   const ce = document.getElementById('limite-e'), oe = document.getElementById('limite-e-out');
   const lectura = document.getElementById('limite-lectura');
-  const a = n => 1 + (n % 2 === 0 ? 1 : -1) * 2 / n;
+  const L = -17;                                  // f'(0) = −17
+  const a = n => { const h = 1 / n; return (fP(h) - fP(0)) / h; };   // pendiente de la secante con h = 1/n
+  const error = n => Math.abs(a(n) - L);          // decrece cuando n crece
 
   function dibujar() {
-    const e = Number(ce.value), N = Math.floor(2 / e + 1e-9);
+    const e = Number(ce.value);
+    let n0 = 1; while (error(n0) >= e && n0 < 10000) n0++;
+    const N = n0 - 1;
     oe.textContent = num(e, 2);
-    const g = new Grafico(lienzo, { prop: 0.42, min: 210, max: 300, x: [0, 61], y: [-1.2, 3.2], m: { i: 40, d: 14, s: 14, b: 46 } });
-    g.ejes({ xt: [1, 10, 20, 30, 40, 50, 60], yt: [-1, 0, 1, 2, 3], ex: 'n', ey: 'aₙ' });
-    g.rect(0, 1 - e, 61, 1 + e, css('--g-relleno'));
-    g.linea([[0, 1], [61, 1]], { color: css('--g-serie3'), ancho: 1.5, guion: [6, 4] });
-    g.textoPx('L = 1', g.x1 - 4, g.Y(1) - 10, { al: 'right', color: css('--g-serie3'), peso: 700 });
+    const g = new Grafico(lienzo, { prop: 0.42, min: 210, max: 300, x: [0, 61], y: [-18.5, -3], m: { i: 44, d: 14, s: 14, b: 46 } });
+    g.ejes({ xt: [1, 10, 20, 30, 40, 50, 60], yt: [-18, -15, -12, -9, -6, -3], ex: 'n (con h = 1/n)', ey: 'pendiente de la secante' });
+    g.rect(0, L - e, 61, Math.min(-3, L + e), css('--g-relleno'));
+    g.linea([[0, L], [61, L]], { color: css('--g-serie3'), ancho: 1.5, guion: [6, 4] });
+    g.textoPx("f'(0) = −17", g.x1 - 4, g.Y(L) + 12, { al: 'right', color: css('--g-serie3'), peso: 700 });
     if (N + 0.5 < 61) {
-      g.linea([[N + 0.5, -1.2], [N + 0.5, 3.2]], { color: css('--g-serie2'), ancho: 2 });
-      g.textoPx('N = ' + N, g.X(N + 0.5) + 5, g.y1 + 8, { color: css('--g-serie2'), peso: 700 });
+      g.linea([[N + 0.5, -18.5], [N + 0.5, -3]], { color: css('--g-serie2'), ancho: 2 });
+      g.textoPx('N = ' + N, g.X(N + 0.5) + 5, g.y1 + 18, { color: css('--g-serie2'), peso: 700 });
     }
-    for (let n = 1; n <= 60; n++) {
-      const dentro = n > N;
-      g.punto(n, a(n), { r: 3.6, color: dentro ? css('--g-serie3') : css('--g-eje') });
-    }
-    const n1 = N + 1;
-    lectura.innerHTML = 'El escéptico pide <b>ε = ' + num(e, 2) + '</b>. Tú respondes <b>N = ' + N + '</b>: desde n = ' + n1 +
-      ', todos los términos quedan a menos de ' + num(e, 2) + ' de 1. Compruébalo con el primero: |a<sub>' + n1 + '</sub> − 1| = 2/' + n1 +
-      ' = ' + num(2 / n1, 3) + ' &lt; ' + num(e, 2) + '. Cuanto más pequeño el ε, más grande el N; pero siempre existe un N.';
+    for (let n = 1; n <= 60; n++) g.punto(n, a(n), { r: 3.6, color: n > N ? css('--g-serie3') : css('--g-eje') });
+    lectura.innerHTML = 'Afirmas que ' + m("f'(0) = -17") + '. El escéptico pide ' + m('\\varepsilon = ' + teX(e, 2)) +
+      '. Tú respondes ' + m('N = ' + N) + ': desde ' + m('n = ' + n0) + ', es decir, con ' + m('h \\le \\tfrac{1}{' + n0 + '}') +
+      ', todas las secantes tienen una pendiente a menos de ' + m(teX(e, 2)) + ' de ' + m('-17') + '.<br>Compruébalo con la primera: ' +
+      m('a_{' + n0 + '} = ' + teX(a(n0), 3)) + ' y ' + m('|a_{' + n0 + '} - (-17)| = ' + teX(error(n0), 3) + ' < ' + teX(e, 2)) +
+      '. Cuanto más pequeño el ε, más grande el N; pero siempre existe un N. Por eso decimos que la derivada <em>es</em> −17, sin usar nunca ' + m('h = 0') + '.';
   }
   ce.addEventListener('input', dibujar);
   alRedibujar(dibujar);
+}
+
+/* ============================================================
+   PROCESO 5b: Laboratorio 4 · Regla de la cadena
+   Insumo:    un paciente con x = 2 y gasto real y = 7; el parámetro w
+   Resultado: los tres eslabones (w → predicción → error), las dos tasas, su producto
+              y la comprobación con la pendiente medida directamente
+   ============================================================ */
+function labCadena() {
+  const cw = document.getElementById('cadena-w'); if (!cw) return;
+  const ow = document.getElementById('cadena-w-out');
+  const eslabones = document.getElementById('cadena-eslabones');
+  const lectura = document.getElementById('cadena-lectura');
+  const X = 2, Y = 7;
+  function actualizar() {
+    const w = Number(cw.value), yh = w * X, L = Math.pow(Y - yh, 2);
+    const tasaFuera = -2 * (Y - yh), tasaDentro = X, cadena = tasaFuera * tasaDentro;
+    const hh = 1e-4, medida = (Math.pow(Y - (w + hh) * X, 2) - L) / hh;   // pendiente medida con un h muy pequeño
+    ow.textContent = num(w, 2);
+    eslabones.innerHTML =
+      '<div class="eslabon"><span class="etq">parámetro</span>' + m('w = ' + teX(w, 2)) + '</div>' +
+      '<div class="enlace">' + m('\\hat y = w \\times ' + X) + '<br>' + m('\\tfrac{d\\hat y}{dw} = ' + X) + '</div>' +
+      '<div class="eslabon"><span class="etq">predicción</span>' + m('\\hat y = ' + teX(yh, 2)) + '</div>' +
+      '<div class="enlace">' + m('L = (' + Y + ' - \\hat y)^2') + '<br>' + m('\\tfrac{dL}{d\\hat y} = ' + teX(tasaFuera, 2)) + '</div>' +
+      '<div class="eslabon"><span class="etq">error</span>' + m('L = ' + teX(L, 2)) + '</div>';
+    let sentido = cadena < -0.01 ? 'Derivada negativa: si subes <em>w</em>, el error baja.' :
+      cadena > 0.01 ? 'Derivada positiva: si subes <em>w</em>, el error sube. Conviene bajar <em>w</em>.' :
+      'Derivada cero: la predicción es exacta y el error es mínimo.';
+    lectura.innerHTML = '<b>Regla de la cadena:</b> ' + m('\\frac{dL}{dw} = \\frac{dL}{d\\hat y}\\cdot\\frac{d\\hat y}{dw} = ' + teX(tasaFuera, 2) + ' \\times ' + X + ' = ' + teX(cadena, 2)) +
+      '<br><b>Pendiente medida directamente</b> (con ' + m('h = 0{,}0001') + '): ' + m(teX(medida, 2)) + '. Coinciden.<br>' + sentido;
+  }
+  cw.addEventListener('input', actualizar);
+  actualizar();
 }
 
 function labDescenso1D() {
@@ -704,12 +801,12 @@ function labDescenso1D() {
     camino.forEach((x, i) => g.punto(x, fP(x), { r: i === camino.length - 1 ? 8 : 4, color: ambar, alfa: i === camino.length - 1 ? 1 : 0.55, borde: i === camino.length - 1 ? css('--papel-2') : null }));
     g.soltar();
 
-    const k = camino.length - 1, x = camino[k], m = dP(x), gam = Number(cg.value);
-    let texto = '<b>Paso ' + k + '</b> · x = ' + num(x, 3) + ' · pendiente f′(x) = ' + num(m, 2) +
-      '<br>Siguiente: x − γ·f′(x) = ' + num(x, 3) + ' − ' + num(gam, 3) + ' × (' + num(m, 2) + ') = <b>' + num(x - gam * m, 3) + '</b>';
-    if (escapo) texto = '<b>El camino se escapó:</b> cada salto es más grande que el anterior. El paso γ es demasiado grande.';
+    const k = camino.length - 1, x = camino[k], pend = dP(x), gam = Number(cg.value);
+    let texto = '<b>Paso ' + k + '</b> · ' + m('x_{' + k + '} = ' + teX(x, 3)) + ' · pendiente: ' + m("f'(x_{" + k + '}) = ' + teX(pend, 2)) +
+      '<br>Siguiente: ' + m('x_{' + (k + 1) + "} = x_{" + k + "} - \\gamma\\, f'(x_{" + k + '}) = ' + teX(x, 3) + ' - ' + teX(gam, 3) + ' \\times (' + teX(pend, 2) + ') = ' + teX(x - gam * pend, 3));
+    if (escapo) texto = '<b>El camino se escapó:</b> cada salto es más grande que el anterior. El paso ' + m('\\gamma') + ' es demasiado grande.';
     else if (x < -6.3 || x > 2.2) texto += '<br>La bola está fuera del dibujo.';
-    else if (k > 0 && Math.abs(m) < 0.05) texto += '<br>La pendiente es casi cero: llegaste al fondo de un valle.';
+    else if (k > 0 && Math.abs(pend) < 0.05) texto += '<br>La pendiente es casi cero: llegaste al fondo de un valle.';
     lectura.innerHTML = texto;
   }
   function veinte() {
@@ -786,10 +883,13 @@ function labGustos() {
         '<span style="display:block;height:6px;border-radius:3px;background:var(--g-rejilla)"><span style="display:block;height:6px;border-radius:3px;width:' + ancho + '%;background:var(--g-serie1)"></span></span></li>';
     }).join('');
     const p = orden[0];
-    lectura.innerHTML = 'Tu punto: (acción ' + num(tu[0], 2) + '; seriedad ' + num(tu[1], 2) + '). ' +
-      'Nota(<b>' + p[0] + '</b>) = ' + num(tu[0], 2) + ' × ' + num(p[1], 2) + ' + ' + num(tu[1], 2) + ' × ' + num(p[2], 2) + ' = <b>' + num(nota(p), 2) + '</b>.<br>' +
-      '<b>Derivada parcial</b> de esa nota respecto de tu gusto por la acción = ' + num(p[1], 2) + ' (la acción de la película). ' +
-      'Si subes tu gusto por la acción en 0,1, la nota cambia en 0,1 × ' + num(p[1], 2) + ' = ' + num(0.1 * p[1], 3) + '.';
+    // nt(−0.2) → '(-0{,}20)': número para una fórmula, entre paréntesis si es negativo
+    const nt = v => v < 0 ? '(' + teX(v, 2) + ')' : teX(v, 2);
+    lectura.innerHTML = 'Tu punto: ' + m('u = (u_1;\\ u_2) = (' + teX(tu[0], 2) + ';\\ ' + teX(tu[1], 2) + ')') + ' (acción; seriedad). ' +
+      'La película con la nota más alta es <b>' + p[0] + '</b>: ' + m('v = (' + teX(p[1], 2) + ';\\ ' + teX(p[2], 2) + ')') + '.<br>' +
+      'Nota predicha: ' + m('u_1 v_1 + u_2 v_2 = ' + nt(tu[0]) + '\\times' + nt(p[1]) + ' + ' + nt(tu[1]) + '\\times' + nt(p[2]) + ' = ' + teX(nota(p), 2)) + '<br>' +
+      '<b>Derivada parcial</b> respecto de tu gusto por la acción: ' + m('\\frac{\\partial\\,\\text{nota}}{\\partial u_1} = v_1 = ' + teX(p[1], 2)) +
+      '. Si subes ' + m('u_1') + ' en 0,1, la nota cambia en ' + m('0{,}1 \\times ' + nt(p[1]) + ' = ' + teX(0.1 * p[1], 3)) + '.';
   }
   arrastrar(lienzo, (px, py) => {
     const g = { x0: 12, x1: lienzo.clientWidth - 12, y1: 16, y0: lienzo.clientHeight - 16 };
@@ -803,19 +903,27 @@ function labGustos() {
 
 
 /* ============================================================
-   PROCESO 7: Laboratorio 6 · Descenso de gradiente en 2D (ejemplo 7.1)
+   PROCESO 7: Laboratorio 7 · Descenso de gradiente en 3D y desde arriba (ejemplo 7.1)
    Insumo:    f(x₁, x₂) = x₁² + x₁x₂ + 10x₂² − 5x₁ − 3x₂, x₀ = (−3; −1), γ = 0,085
-   Resultado: mapa de curvas de nivel, camino, flecha contraria al gradiente y tabla de pasos
+   Resultado: el terreno en 3D (se gira arrastrando), el mapa de curvas de nivel,
+              el gráfico «mismo paso, distinta subida», la tabla de pasos y la lectura
    ============================================================ */
 function labDescenso2D() {
   const lienzo = document.getElementById('d2-lienzo'); if (!lienzo) return;
+  const lienzo3d = document.getElementById('d2-3d');
+  const lienzoCortes = document.getElementById('d2-cortes');
+  const botonesVista = Array.from(document.querySelectorAll('#demo-d2 [data-vista]'));
   const cg = document.getElementById('d2-g'), og = document.getElementById('d2-g-out');
   const cuerpo = document.querySelector('#d2-tabla tbody');
   const lectura = document.getElementById('d2-lectura');
   const f = (a, b) => a * a + a * b + 10 * b * b - 5 * a - 3 * b;
   const grad = (a, b) => [2 * a + b - 5, a + 20 * b - 3];
   const MIN = [97 / 39, 1 / 39];   // solución exacta: (2,487; 0,026)
+  const F_MIN = f(MIN[0], MIN[1]);  // −6,256
   const NIVELES = [-5, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+  // Vistas del terreno: [giro alrededor del eje vertical, inclinación de la mirada], en radianes.
+  const VISTAS = { inclinada: [-0.5, 0.8], 'este-oeste': [0, 0.1], 'norte-sur': [-Math.PI / 2, 0.1], arriba: [0, 1.54] };
+  let vista = VISTAS.inclinada.slice();
   let inicio = [-3, -1], camino = [inicio.slice()], escapo = false, animando = null;
 
   function reiniciar(desde) {
@@ -831,14 +939,116 @@ function labDescenso2D() {
     if (!isFinite(n[0]) || Math.abs(n[0]) > 1e4 || Math.abs(n[1]) > 1e4) escapo = true; else camino.push(n);
     dibujar();
   }
+
+  /* dibujar3D: terreno → malla de cuadriláteros coloreados por altura, ordenados de atrás hacia adelante.
+     La escala es fija: un metro del terreno mide lo mismo en todas las vistas, para comparar pendientes. */
+  const ESC_Z = 0.04;                       // altura en el dibujo por cada unidad de error
+  const Z_MEDIO = (96 * ESC_Z) / 2;         // centra el terreno en vertical
+  const altura = v => (v - F_MIN) * ESC_Z - Z_MEDIO;
+  function dibujar3D() {
+    const g = new Grafico(lienzo3d, { prop: 0.56, min: 300, max: 560, x: [0, 1], y: [0, 1], m: { i: 0, d: 0, s: 0, b: 0 } });
+    const c = g.ctx, az = vista[0], el = vista[1];
+    const ca = Math.cos(az), sa = Math.sin(az), ce = Math.cos(el), se = Math.sin(el);
+    // crudo: punto del terreno (x₁, x₂, altura) → [x, y] en unidades del terreno, y la profundidad
+    const crudo = (X, Y, Z) => {
+      const xr = X * ca - Y * sa, yr = X * sa + Y * ca;
+      return [xr, yr * se + Z * ce, yr * ce - Z * se];
+    };
+    // Encuadre: el terreno ocupa el lienzo en cada vista. Dentro de una vista, una unidad mide
+    // lo mismo en las tres direcciones, así que las pendientes se comparan sin engaño.
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let i = 0; i <= 16; i++) for (let j = 0; j <= 8; j++) {
+      const X = -4 + i / 2, Y = -2 + j / 2, q = crudo(X, Y, altura(f(X, Y)));
+      x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]);
+    }
+    const esc = Math.min((g.w - 40) / (x1 - x0), (g.h - 60) / (y1 - y0));
+    const cx = g.w / 2 - esc * (x0 + x1) / 2, cy = g.h / 2 + 10 + esc * (y0 + y1) / 2;
+    // proy: punto del terreno (x₁, x₂, altura) → [x en pantalla, y en pantalla, profundidad]
+    const proy = (X, Y, Z) => { const q = crudo(X, Y, Z); return [cx + esc * q[0], cy - esc * q[1], q[2]]; };
+    const bajo = hexARgb(css('--g-mapa-bajo')), alto = hexARgb(css('--g-mapa-alto'));
+    const NX = 40, NY = 20, malla = [];
+    for (let i = 0; i <= NX; i++) {
+      malla.push([]);
+      for (let j = 0; j <= NY; j++) {
+        const X = -4 + 8 * i / NX, Y = -2 + 4 * j / NY, v = f(X, Y);
+        malla[i].push({ X: X, Y: Y, v: v, p: proy(X, Y, altura(v)) });
+      }
+    }
+    const caras = [];
+    for (let i = 0; i < NX; i++) for (let j = 0; j < NY; j++) {
+      const a = malla[i][j], b = malla[i + 1][j], d = malla[i + 1][j + 1], e = malla[i][j + 1];
+      const prof = (a.p[2] + b.p[2] + d.p[2] + e.p[2]) / 4, v = (a.v + b.v + d.v + e.v) / 4;
+      // Sombreado suave: normal de la cara frente a una luz que viene de arriba.
+      const ux = b.X - a.X, uz = altura(b.v) - altura(a.v), vy = e.Y - a.Y, vz = altura(e.v) - altura(a.v);
+      const nx = -uz * vy, ny = -ux * vz, nz = ux * vy, nn = Math.hypot(nx, ny, nz) || 1;
+      const luz = Math.abs((nx * -0.35 + ny * -0.45 + nz * 0.82) / nn);
+      caras.push({ pts: [a.p, b.p, d.p, e.p], prof: prof, v: v, luz: luz });
+    }
+    caras.sort((p, q) => q.prof - p.prof);
+    const linea = css('--g-eje');
+    c.lineWidth = 0.6;
+    caras.forEach(k => {
+      const t = Math.pow(Math.min(1, Math.max(0, (k.v - F_MIN) / 96)), 0.8), s = 0.72 + 0.28 * k.luz;
+      const col = [0, 1, 2].map(q => Math.round((bajo[q] + (alto[q] - bajo[q]) * t) * s));
+      c.fillStyle = 'rgb(' + col.join(',') + ')';
+      c.beginPath(); k.pts.forEach((p, n) => n ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.fill();
+      c.globalAlpha = 0.28; c.strokeStyle = linea; c.stroke(); c.globalAlpha = 1;
+    });
+    // trazo3D: lista de puntos (x₁, x₂) → línea dibujada sobre el terreno
+    const trazo = (pts, color, ancho) => {
+      c.save(); c.strokeStyle = color; c.lineWidth = ancho; c.lineJoin = 'round'; c.lineCap = 'round'; c.beginPath();
+      pts.forEach((q, n) => { const p = proy(q[0], q[1], altura(f(q[0], q[1])) + 0.03); if (n) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+      c.stroke(); c.restore();
+    };
+    const esteOeste = [], norteSur = [];
+    for (let k = 0; k <= 80; k++) esteOeste.push([-4 + 8 * k / 80, MIN[1]]);
+    for (let k = 0; k <= 40; k++) norteSur.push([MIN[0], -2 + 4 * k / 40]);
+    trazo(esteOeste, css('--g-serie3'), 3);
+    trazo(norteSur, css('--g-serie4'), 3);
+    // Camino del descenso (solo los puntos dentro del terreno dibujado).
+    const dentro = camino.filter(q => Math.abs(q[0]) <= 4 && Math.abs(q[1]) <= 2);
+    if (dentro.length) {
+      trazo(dentro, css('--g-serie1'), 2.6);
+      dentro.forEach((q, n) => {
+        const p = proy(q[0], q[1], altura(f(q[0], q[1])) + 0.03);
+        c.beginPath(); c.arc(p[0], p[1], n === dentro.length - 1 ? 6 : 3.5, 0, 2 * Math.PI);
+        c.fillStyle = css('--g-serie1'); c.fill();
+      });
+    }
+    const pm = proy(MIN[0], MIN[1], altura(F_MIN) + 0.05);
+    g.textoPx('★', pm[0], pm[1], { al: 'center', color: css('--g-serie4'), tam: 18, peso: 700 });
+    // Rótulos de los ejes, en el borde del terreno.
+    const r1 = proy(4.6, -2, altura(F_MIN)), r2 = proy(-4, 2.6, altura(F_MIN));
+    // Rótulos solo si caen dentro del lienzo (en las vistas de frente, un eje apunta hacia ti).
+    if (r1[0] > 60 && r1[0] < g.w - 60) g.textoPx('x₁ · este →', r1[0], r1[1], { al: 'center', color: css('--tinta-suave'), tam: 12, peso: 700, fondo: true });
+    if (r2[0] > 60 && r2[0] < g.w - 60) g.textoPx('x₂ · norte →', r2[0], r2[1], { al: 'center', color: css('--tinta-suave'), tam: 12, peso: 700, fondo: true });
+    g.textoPx('Altura = error f(x₁, x₂) · arrastra para girar', 10, 14, { color: css('--tinta-suave'), tam: 12, peso: 600 });
+  }
+
+  /* dibujarCortes: distancia desde el mínimo → subida del error hacia el este (d²) y hacia el norte (10·d²). */
+  function dibujarCortes() {
+    const g = new Grafico(lienzoCortes, { prop: 0.78, min: 230, max: 330, x: [-1.3, 1.3], y: [0, 14], m: { i: 36, d: 12, s: 28, b: 46 } });
+    g.ejes({ xt: [-1, -0.5, 0, 0.5, 1], yt: [0, 5, 10], fx: v => num(v, v % 1 ? 1 : 0), ex: 'pasos desde el mínimo (d)', ey: 'cuánto sube el error' });
+    g.textoPx('Mismo paso, distinta subida', g.x0 + 4, 12, { peso: 700, tam: 12.5 });
+    g.funcion(d => 10 * d * d, { color: css('--g-serie4'), ancho: 2.6 });
+    g.funcion(d => d * d, { color: css('--g-serie3'), ancho: 2.6 });
+    g.linea([[1, 0], [1, 14]], { color: css('--g-eje'), ancho: 1, guion: [3, 3] });
+    g.punto(1, 10, { r: 5.5, color: css('--g-serie4'), borde: css('--papel-2') });
+    g.punto(1, 1, { r: 5.5, color: css('--g-serie3'), borde: css('--papel-2') });
+    g.textoPx('norte: sube 10', g.X(1) - 8, g.Y(10), { al: 'right', color: css('--g-serie4'), peso: 700, fondo: true });
+    g.textoPx('este: sube 1', g.X(1) - 8, g.Y(1) - 12, { al: 'right', color: css('--g-serie3'), peso: 700, fondo: true });
+  }
+
   function dibujar() {
     og.textContent = num(Number(cg.value), 3);
+    dibujar3D();
+    dibujarCortes();
     const g = new Grafico(lienzo, { prop: 0.5, min: 230, max: 520, x: [-4, 4], y: [-2, 2], m: { i: 36, d: 12, s: 12, b: 46 } });
     pintarMapa(g, f, NIVELES, 'd2');
-    g.ejes({ xt: rango(-4, 4, 1), yt: [-2, -1, 0, 1, 2], ex: 'x₁', ey: 'x₂', rejillaX: false, rejillaY: false });
-    // Estrella en el mínimo.
+    g.ejes({ xt: rango(-4, 4, 1), yt: [-2, -1, 0, 1, 2], ex: 'x₁ (este)', ey: 'x₂ (norte)', rejillaX: false, rejillaY: false });
+    g.linea([[-4, MIN[1]], [4, MIN[1]]], { color: css('--g-serie3'), ancho: 1.6, guion: [5, 4] });
+    g.linea([[MIN[0], -2], [MIN[0], 2]], { color: css('--g-serie4'), ancho: 1.6, guion: [5, 4] });
     g.textoPx('★', g.X(MIN[0]), g.Y(MIN[1]), { al: 'center', color: css('--g-serie4'), tam: 18, peso: 700 });
-    g.textoPx('mínimo', g.X(MIN[0]) + 10, g.Y(MIN[1]) + 13, { color: css('--g-serie4'), tam: 11.5, peso: 700, fondo: true });
     const indigo = css('--g-serie1');
     g.recortar();
     g.linea(camino, { color: indigo, ancho: 2.2 });
@@ -850,19 +1060,39 @@ function labDescenso2D() {
     const largo = Math.hypot(dx, dy);
     if (largo > 1e-9 && !escapo && Math.abs(p[0]) < 4 && Math.abs(p[1]) < 2) {
       const px = g.X(p[0]), py = g.Y(p[1]);
-      g.flechaPx(px, py, px + 46 * dx / largo, py + 46 * dy / largo, { color: css('--g-serie2'), ancho: 3 });
+      g.flechaPx(px, py, px + 40 * dx / largo, py + 40 * dy / largo, { color: css('--g-serie2'), ancho: 3 });
     }
 
     // Tabla de pasos.
     const filas = camino.map((q, i) => [i, q]).filter(r => r[0] <= 8 || r[0] === camino.length - 1);
-    cuerpo.innerHTML = filas.map(r => '<tr' + (r[0] === camino.length - 1 ? ' class="destacada"' : '') + '><td>' + (r[0] === 0 ? 'x₀' : r[0]) + '</td><td class="num">' + num(r[1][0], 2) + '</td><td class="num">' + num(r[1][1], 2) + '</td><td class="num">' + num(f(r[1][0], r[1][1]), 2) + '</td></tr>').join('') +
-      (camino.length > 10 ? '' : '');
-    const gam = Number(cg.value);
-    lectura.innerHTML = escapo ? '<b>El camino se escapó.</b> Con γ = ' + num(gam, 3) + ' cada salto cruza el valle y cae más alto. Baja γ y pulsa «Volver a (−3; −1)».'
-      : '<b>Paso ' + (camino.length - 1) + '</b> en (' + num(p[0], 2) + '; ' + num(p[1], 2) + ').<br>∂f/∂x₁ = ' + num(gr[0], 2) + ' · ∂f/∂x₂ = ' + num(gr[1], 2) +
-        '<br>Gradiente: (' + num(gr[0], 2) + '; ' + num(gr[1], 2) + '). La flecha ámbar va en sentido contrario.' +
-        '<br>Siguiente: (' + num(p[0], 2) + '; ' + num(p[1], 2) + ') − ' + num(gam, 3) + ' × (' + num(gr[0], 2) + '; ' + num(gr[1], 2) + ') = <b>(' + num(p[0] - gam * gr[0], 2) + '; ' + num(p[1] - gam * gr[1], 2) + ')</b>';
+    cuerpo.innerHTML = filas.map(r => '<tr' + (r[0] === camino.length - 1 ? ' class="destacada"' : '') + '><td>' + m('x_{' + r[0] + '}') + '</td><td class="num">' + num(r[1][0], 2) + '</td><td class="num">' + num(r[1][1], 2) + '</td><td class="num">' + num(f(r[1][0], r[1][1]), 2) + '</td></tr>').join('');
+    const gam = Number(cg.value), k = camino.length - 1;
+    const par = (a, b) => '(' + teX(a, 2) + ';\\ ' + teX(b, 2) + ')';
+    lectura.innerHTML = escapo
+      ? '<b>El camino se escapó.</b> Con ' + m('\\gamma = ' + teX(gam, 3)) + ' cada salto cruza el valle y cae más alto. Baja ' + m('\\gamma') + ' y pulsa «Volver a (−3; −1)».'
+      : '<b>Paso ' + k + '</b> en ' + m('x_{' + k + '} = ' + par(p[0], p[1])) +
+        '<br>' + m('\\tfrac{\\partial f}{\\partial x_1} = ' + teX(gr[0], 2)) + ' · ' + m('\\tfrac{\\partial f}{\\partial x_2} = ' + teX(gr[1], 2)) +
+        ', así que ' + m('\\nabla f(x_{' + k + '}) = ' + par(gr[0], gr[1])) + '. La flecha ámbar va en sentido contrario.' +
+        '<br>Siguiente: ' + m('x_{' + (k + 1) + '} = ' + par(p[0], p[1]) + ' - ' + teX(gam, 3) + '\\times' + par(gr[0], gr[1]) + ' = ' + par(p[0] - gam * gr[0], p[1] - gam * gr[1]));
   }
+
+  // Giro del terreno: arrastrar en horizontal gira; en vertical, inclina la mirada.
+  let ultimo = null;
+  arrastrar(lienzo3d, (px, py, tipo) => {
+    if (tipo === 'pointerdown') { ultimo = [px, py]; return; }
+    if (!ultimo) return;
+    vista = [vista[0] - (px - ultimo[0]) * 0.01, Math.max(0.05, Math.min(1.56, vista[1] + (py - ultimo[1]) * 0.01))];
+    ultimo = [px, py];
+    botonesVista.forEach(b => b.setAttribute('aria-pressed', 'false'));
+    dibujar3D();
+  });
+  lienzo3d.style.cursor = 'grab';
+  botonesVista.forEach(b => b.addEventListener('click', () => {
+    vista = VISTAS[b.dataset.vista].slice();
+    botonesVista.forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    dibujar3D();
+  }));
+
   document.getElementById('d2-paso').addEventListener('click', paso);
   document.getElementById('d2-diez').addEventListener('click', () => {
     clearInterval(animando); let n = 0;
@@ -955,11 +1185,11 @@ function labLotes() {
     });
     h.soltar();
 
-    lectura.innerHTML = METODOS.map(m => {
-      const k = m.camino.length - 1, u = m.camino[k];
-      return '<span style="color:var(' + m.color + ');font-weight:700">' + m.nombre + '</span>: ' + k + ' pasos · ' +
-        num(k * m.tam / n, k * m.tam % n === 0 ? 0 : 1) + (k * m.tam === n ? ' época' : ' épocas') + ' · pérdida ' + num(perdida(u[0], u[1]), 3);
-    }).join('<br>') + '<br><span class="suave">Pérdida mínima posible: ' + num(Lmin, 3) + ' (estrella roja).</span>';
+    lectura.innerHTML = METODOS.map(mt => {
+      const k = mt.camino.length - 1, u = mt.camino[k];
+      return '<span style="color:var(' + mt.color + ');font-weight:700">' + mt.nombre + '</span>: ' + k + ' pasos · ' +
+        num(k * mt.tam / n, k * mt.tam % n === 0 ? 0 : 1) + (k * mt.tam === n ? ' época' : ' épocas') + ' · ' + m('R_{\\text{emp}} = ' + teX(perdida(u[0], u[1]), 3));
+    }).join('<br>') + '<br><span class="suave">Pérdida mínima posible: ' + m(teX(Lmin, 3)) + ' (estrella roja).</span>';
   }
   document.getElementById('lotes-correr').addEventListener('click', () => {
     reiniciar();
@@ -1003,15 +1233,16 @@ function labDado() {
 
   function actualizar() {
     const inter = Array.from(A).filter(x => B.has(x)).length;
-    let html = 'A = ' + conjunto(A) + ' · B = ' + conjunto(B) + '<br>' +
-      'P(A) = ' + fr(A.size, 6) + ' · P(B) = ' + fr(B.size, 6) + ' · P(A ∩ B) = ' + fr(inter, 6) + '<br>';
+    const conjT = S => '\\{' + Array.from(S).sort().join(',\\ ') + '\\}';
+    let html = m('A = ' + conjT(A)) + ' · ' + m('B = ' + conjT(B)) + '<br>' +
+      m('P(A) = ' + frT(A.size, 6)) + ' · ' + m('P(B) = ' + frT(B.size, 6)) + ' · ' + m('P(A\\cap B) = ' + frT(inter, 6)) + '<br>';
     let independientes = false;
-    if (B.size === 0) html += 'B está vacío: P(A | B) no está definida, porque no se puede dividir entre P(B) = 0.';
+    if (B.size === 0) html += 'B está vacío: ' + m('P(A\\mid B)') + ' no está definida, porque no se puede dividir entre ' + m('P(B) = 0') + '.';
     else {
-      html += '<b>P(A | B) = P(A ∩ B) / P(B) = ' + fr(inter, 6) + ' ÷ ' + fr(B.size, 6) + ' = ' + fr(inter, B.size) + '</b><br>';
+      html += m('P(A\\mid B) = \\dfrac{P(A\\cap B)}{P(B)} = \\dfrac{' + frT(inter, 6) + '}{' + frT(B.size, 6) + '} = ' + frT(inter, B.size)) + '<br>';
       independientes = inter * 6 === A.size * B.size;
       html += independientes ? 'Saber B no cambia la probabilidad de A: <b>A y B son independientes</b>.'
-        : 'Saber B cambia la probabilidad de A, de ' + fr(A.size, 6) + ' a ' + fr(inter, B.size) + ': A y B <b>no</b> son independientes.';
+        : 'Saber B cambia la probabilidad de A, de ' + m(frT(A.size, 6)) + ' a ' + m(frT(inter, B.size)) + ': A y B <b>no</b> son independientes.';
     }
     lectura.innerHTML = html;
 
@@ -1020,12 +1251,12 @@ function labDado() {
     const caja = document.getElementById('reto-independencia');
     if (!estado || !ok || !caja || caja.classList.contains('resuelto')) return;
     const esA = A.size === 2 && A.has(1) && A.has(2);
-    if (!esA) estado.textContent = 'Para este reto, deja A = {1, 2}.';
+    if (!esA) estado.innerHTML = 'Para este reto, deja ' + m('A = \\{1,\\ 2\\}') + '.';
     else if (B.size === 0 || B.size === 6) estado.textContent = 'B no puede estar vacío ni tener las seis caras.';
-    else if (!independientes) estado.textContent = 'Todavía no: con B = ' + conjunto(B) + ', P(A | B) = ' + fr(inter, B.size) + ', distinto de P(A) = 1/3.';
+    else if (!independientes) estado.innerHTML = 'Todavía no: con ' + m('B = ' + conjT(B)) + ', ' + m('P(A\\mid B) = ' + frT(inter, B.size)) + ', distinto de ' + m('P(A) = \\tfrac13') + '.';
     else {
       estado.classList.remove('visible');
-      ok.innerHTML = '¡Lo lograste! Con B = ' + conjunto(B) + ', P(A | B) = 1/3 = P(A). Saber B no te dice nada sobre A: son independientes. Hay varias soluciones; por ejemplo, «sale impar» = {1, 3, 5} o «sale par» = {2, 4, 6}. Todas tienen tres caras y exactamente una de ellas está en A.';
+      ok.innerHTML = '¡Lo lograste! Con ' + m('B = ' + conjT(B)) + ', ' + m('P(A\\mid B) = \\tfrac13 = P(A)') + '. Saber B no te dice nada sobre A: son independientes. Hay varias soluciones; por ejemplo, «sale impar» ' + m('= \\{1,\\ 3,\\ 5\\}') + ' o «sale par» ' + m('= \\{2,\\ 4,\\ 6\\}') + '. Todas tienen tres caras y exactamente una de ellas está en A.';
       ok.classList.add('visible');
       marcarResuelto(caja);
     }
@@ -1060,7 +1291,7 @@ function labBayes() {
     arbol.innerHTML = 'De <b>1 000 000</b> de personas: <b>' + personas(enf) + '</b> tienen la enfermedad, y <b>' + personas(enfJ) + '</b> de ellas tienen el defecto. ' +
       '<b>' + personas(san) + '</b> están sanas, y <b>' + personas(sanJ) + '</b> de ellas tienen el defecto.<br>' +
       'En total, <b>' + personas(totJ) + '</b> personas tienen el defecto. De ellas, <b>' + personas(enfJ) + '</b> están enfermas: ' +
-      '<b>P(z | J) = ' + personas(enfJ) + ' / ' + personas(totJ) + ' = ' + pct(post) + '</b>.';
+      m('P(z\\mid J) = \\dfrac{' + personas(enfJ).replace(',', '{,}').replace(/\u202f/g, '\\,') + '}{' + personas(totJ).replace(',', '{,}').replace(/\u202f/g, '\\,') + '} = ' + pct(post).replace(',', '{,}').replace('\u00a0%', '\\,\\%')) + '.';
     // Barra: personas con el defecto, enfermas (rojo) y sanas (índigo).
     const g = new Grafico(barra, { prop: 0.06, min: 44, max: 52, x: [0, 1], y: [0, 1], m: { i: 0, d: 0, s: 6, b: 6 } });
     g.rect(0, 0, post, 1, css('--g-serie4'));
@@ -1122,7 +1353,7 @@ function labFEC() {
 
   function dibujar() {
     tabla.querySelectorAll('[data-x]').forEach(c => c.classList.toggle('activa', Number(c.dataset.x) === elegido));
-    const t = total(elegido), m = media(elegido);
+    const t = total(elegido), med = media(elegido);
     const indigo = css('--g-serie1'), ambar = css('--g-serie2');
 
     const g = new Grafico(lienzoC, { prop: 0.7, min: 220, max: 300, x: [-0.6, 5.6], y: [0, 1.08], m: { i: 40, d: 10, s: 22, b: 46 } });
@@ -1132,8 +1363,8 @@ function labFEC() {
       g.rect(y - 0.32, 0, y + 0.32, c / t, indigo, 0.9);
       g.textoPx(fr(c, t), g.X(y), g.Y(c / t) - 9, { al: 'center', tam: 11, peso: 600 });
     });
-    g.linea([[m, 0], [m, 1.08]], { color: ambar, ancho: 2.5, guion: [6, 4] });
-    g.textoPx('media = ' + num(m, 2), g.X(m) + (m > 3.5 ? -6 : 6), g.y1 + 6, { al: m > 3.5 ? 'right' : 'left', color: ambar, peso: 700, fondo: true });
+    g.linea([[med, 0], [med, 1.08]], { color: ambar, ancho: 2.5, guion: [6, 4] });
+    g.textoPx('media = ' + num(med, 2), g.X(med) + (med > 3.5 ? -6 : 6), g.y1 + 6, { al: med > 3.5 ? 'right' : 'left', color: ambar, peso: 700, fondo: true });
 
     const h = new Grafico(lienzoF, { prop: 0.7, min: 220, max: 300, x: [1.5, 12.5], y: [-0.2, 3.4], m: { i: 36, d: 10, s: 22, b: 46 } });
     h.ejes({ xt: rango(2, 12, 2), yt: [0, 1, 2, 3], ex: 'suma x', ey: 'E[Y | X = x]' });
@@ -1143,9 +1374,9 @@ function labFEC() {
     h.linea(pts, { color: indigo, ancho: 2.5 });
     pts.forEach(p => h.punto(p[0], p[1], { r: p[0] === elegido ? 7 : 4, color: indigo, borde: p[0] === elegido ? css('--papel-2') : null }));
 
-    const partes = cuenta[elegido].map((c, y) => c ? 'P(Y = ' + y + ' | X = ' + elegido + ') = ' + fr(c, t) : null).filter(Boolean);
-    lectura.innerHTML = 'Suma <b>x = ' + elegido + '</b>: ' + t + ' de los 36 pares → P(X = ' + elegido + ') = ' + t + '/36 (probabilidad marginal: la columna sumada).<br>' +
-      'Dentro del grupo: ' + partes.join(' · ') + '.<br><b>E[Y | X = ' + elegido + '] = ' + num(m, 2) + '</b>. Sin saber la suma, la mejor predicción sería la media general: ' + num(MEDIA_GENERAL, 2) + '.';
+    const partes = cuenta[elegido].map((c, y) => c ? m('P(Y = ' + y + '\\mid X = ' + elegido + ') = ' + frT(c, t)) : null).filter(Boolean);
+    lectura.innerHTML = 'Suma ' + m('x = ' + elegido) + ': ' + t + ' de los 36 pares, así que ' + m('P(X = ' + elegido + ') = \\tfrac{' + t + '}{36}') + ' (probabilidad marginal: la columna sumada).<br>' +
+      'Dentro del grupo: ' + partes.join(' · ') + '.<br><b>Media del grupo:</b> ' + m('E[Y\\mid X = ' + elegido + '] = ' + teX(med, 2)) + '. Sin saber la suma, la mejor predicción sería la media general: ' + m('E[Y] = ' + teX(MEDIA_GENERAL, 2)) + '.';
   }
   alRedibujar(dibujar);
 }
@@ -1173,7 +1404,7 @@ function labTecho() {
     g.punto(x, fec(x), { r: 6, color: css('--g-serie1'), borde: css('--papel-2') });
     g.punto(x, recta(x), { r: 6, color: css('--g-serie2'), borde: css('--papel-2') });
     const dif = recta(x) - fec(x);
-    lectura.innerHTML = 'x = ' + num(x, 2) + ' · <b style="color:var(--g-serie1)">FEC = ' + num(fec(x), 3) + '</b> · <b style="color:var(--g-serie2)">mejor recta = ' + num(recta(x), 3) + '</b> · ' +
+    lectura.innerHTML = m('x = ' + teX(x, 2)) + ' · <b style="color:var(--g-serie1)">FEC:</b> ' + m('E[Y\\mid X = x] = \\tfrac{3x+2}{6x+3} = ' + teX(fec(x), 3)) + ' · <b style="color:var(--g-serie2)">mejor recta:</b> ' + m('\\tfrac{7}{11} - \\tfrac{x}{11} = ' + teX(recta(x), 3)) + ' · ' +
       (Math.abs(dif) < 0.002 ? 'aquí casi coinciden.' : dif > 0 ? 'la recta queda por encima de la FEC.' : 'la recta queda por debajo de la FEC.') +
       '<br>La FEC es una curva; la recta solo la aproxima: queda por debajo en los extremos y por encima en el centro.';
   }
@@ -1238,9 +1469,9 @@ function labTCL() {
 
     const prom = medias.reduce((s, v) => s + v, 0) / REPETICIONES;
     const de = Math.sqrt(medias.reduce((s, v) => s + Math.pow(v - prom, 2), 0) / (REPETICIONES - 1));
-    lectura.innerHTML = '<b>N = ' + num(N, 0) + '</b> · 1 000 muestras · media de los promedios = <b>' + num(prom, 4) + '</b> (el valor real es 0,05) · ' +
-      'ancho de los promedios (desviación estándar) = <b>' + num(de, 4) + '</b>; el teorema predice σ/√N = 0,218/√' + num(N, 0) + ' = ' + num(sigmaN, 4) + '.<br>' +
-      'Izquierda: la franja sombreada es donde cae el promedio el 95 % de las veces; se angosta como 1/√n.';
+    lectura.innerHTML = m('N = ' + teX(N, 0)) + ' · 1 000 muestras · media de los promedios: ' + m(teX(prom, 4)) + ' (el valor real es ' + m('\\mu = 0{,}05') + ').<br>' +
+      'Ancho de los promedios (desviación estándar): ' + m(teX(de, 4)) + '. El teorema predice ' + m('\\sigma/\\sqrt{N} = 0{,}218/\\sqrt{' + teX(N, 0) + '} = ' + teX(sigmaN, 4)) + '.<br>' +
+      'Izquierda: la franja sombreada es donde cae el promedio el 95 % de las veces; se angosta como ' + m('1/\\sqrt{n}') + '.';
   }
   botones.forEach(b => b.addEventListener('click', () => {
     N = Number(b.dataset.n);
@@ -1293,7 +1524,7 @@ function armarFicha() {
    Resultado: todo funcionando; un error en un laboratorio no detiene a los demás
    ============================================================ */
 function arrancar() {
-  [iniciarFormulas, iniciarBarra, iniciarTema, iniciarRetos, labGPT, labPerdida, labDerivada, labLimite, labDescenso1D,
+  [iniciarFormulas, iniciarBarra, iniciarTema, iniciarRetos, labGPT, labPerdida, labDerivada, labLimite, labCadena, labDescenso1D,
    labGustos, labDescenso2D, labLotes, labDado, labBayes, labFEC, labTecho, labTCL, barrasSIS, armarFicha]
     .forEach(fn => { try { fn(); } catch (e) { console.error('[lección 1] ' + fn.name, e); } });
 }

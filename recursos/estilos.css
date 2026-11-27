@@ -150,7 +150,7 @@ li { margin-bottom: 0.35em; }
 }
 .barra__fila { display: flex; align-items: center; gap: 14px; max-width: var(--ancho-ancho); margin: 0 auto; padding: 10px var(--margen); }
 .barra__curso { font-weight: 600; color: var(--tinta); text-decoration: none; white-space: nowrap; }
-.barra__partes { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; flex: 1; }
+.barra__partes { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; }
 .barra__partes::-webkit-scrollbar { display: none; }
 .barra__partes a { color: var(--tinta-suave); text-decoration: none; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
 .barra__partes a:hover, .barra__partes a.activa { background: var(--acento-suave); color: var(--acento); }
@@ -253,7 +253,7 @@ table.simbolos td:first-child { white-space: nowrap; text-align: center; width: 
 .lab__control label { color: var(--tinta-suave); }
 .lab__control output { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3.2em; }
 .lab input[type="range"] { accent-color: var(--acento); width: min(220px, 52vw); }
-.lab__lectura { margin-top: 12px; padding: 10px 12px; background: var(--papel); border-radius: 8px; font-variant-numeric: tabular-nums; line-height: 1.5; }
+.lab__lectura { margin-top: 12px; padding: 10px 12px; background: var(--papel); border-radius: 8px; font-variant-numeric: tabular-nums; line-height: 1.7; overflow-x: auto; overflow-y: hidden; }
 .lab__lectura b { font-weight: 700; }
 /* Laboratorio ancho: sale de la columna de texto en pantallas grandes (gráficos lado a lado). */
 .lab--ancho { --ancho-lab: min(62rem, calc(100vw - 2 * var(--margen))); width: var(--ancho-lab); margin-left: calc(50% - var(--ancho-lab) / 2); }
@@ -261,7 +261,7 @@ table.simbolos td:first-child { white-space: nowrap; text-align: center; width: 
 .lab__dos--mapa { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
 @media (max-width: 720px) { .lab__dos { grid-template-columns: 1fr; } }
 .leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.85rem; color: var(--tinta-suave); margin-top: 8px; }
-.leyenda span::before { content: ""; display: inline-block; width: 12px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 6px; vertical-align: middle; }
+.leyenda > span::before { content: ""; display: inline-block; width: 12px; height: 4px; border-radius: 2px; background: var(--c); margin-right: 6px; vertical-align: middle; }
 
 .boton { font: inherit; font-weight: 600; border: 1px solid var(--acento); background: var(--acento); color: var(--papel-2); padding: 7px 14px; border-radius: 999px; cursor: pointer; transition: filter 0.15s, transform 0.1s; }
 .boton:hover { filter: brightness(1.08); }
@@ -270,6 +270,49 @@ table.simbolos td:first-child { white-space: nowrap; text-align: center; width: 
 .boton[aria-pressed="true"] { background: var(--acento); color: var(--papel-2); }
 .boton:focus-visible, .opcion:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--acento) 45%, transparent); outline-offset: 2px; }
 
+
+/* ============================================================
+   PROCESO 7b: Piezas de explicación
+   Insumo:    párrafos .util, bloques <details class="mas">, la ruleta, la cadena y el mapa final
+   Resultado: «Para qué sirve» visible en cada idea; lo técnico, plegado; dibujos simples de apoyo
+   ============================================================ */
+/* «Para qué sirve»: conecta cada idea con su uso en machine learning. */
+.util { border-left: 4px solid var(--acento); background: var(--acento-suave); padding: 10px 14px; border-radius: 0 10px 10px 0; margin: 1.2em 0; }
+.util::before { content: "Para qué sirve: "; font-family: var(--letra-titulos); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--acento); }
+
+/* «Para saber más»: lo técnico queda plegado y se abre con un clic. */
+details.mas { border: 1px dashed var(--linea); border-radius: 10px; padding: 8px 14px; margin: 1em 0; background: var(--papel-2); }
+details.mas summary { cursor: pointer; font-family: var(--letra-titulos); font-weight: 600; color: var(--acento); font-size: var(--texto-ui); }
+details.mas[open] summary { margin-bottom: 8px; }
+
+/* Ruleta del laboratorio 0: cada palabra ocupa un pedazo del tamaño de su probabilidad. */
+.ruleta-marco { position: relative; margin: 14px 0 10px; }
+.ruleta { display: flex; height: 36px; border-radius: 8px; overflow: hidden; font-family: var(--letra-titulos); font-size: 0.78rem; }
+.ruleta > span { display: flex; align-items: center; justify-content: center; color: #fff; white-space: nowrap; overflow: hidden; border-right: 2px solid var(--papel-2); }
+.ruleta__aguja { position: absolute; top: -8px; bottom: -8px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--tinta); left: 0; opacity: 0; transition: left 0.5s cubic-bezier(.2,.8,.2,1), opacity 0.2s; }
+.generadas p { width: 100%; }
+
+/* Cadena del laboratorio 4: parámetro → predicción → error. */
+.cadena { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 10px; margin: 14px 0 4px; font-family: var(--letra-titulos); }
+.eslabon { border: 2px solid var(--acento); border-radius: 12px; padding: 8px 14px; text-align: center; min-width: 116px; background: var(--papel); }
+.eslabon .etq { display: block; font-size: 0.78rem; color: var(--tinta-suave); text-transform: uppercase; letter-spacing: 0.05em; }
+.enlace { text-align: center; color: var(--g-serie2); font-size: 0.9rem; min-width: 90px; }
+.enlace::after { content: "→"; display: block; font-size: 1.5rem; line-height: 1; }
+@media (max-width: 560px) { .enlace::after { content: "↓"; } .cadena { flex-direction: column; } }
+
+/* Mapa final «Cómo encaja todo». */
+.flujo { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); margin-top: 1.2em; margin-bottom: 1.6em; font-family: var(--letra-titulos); font-size: 0.92rem; }
+.flujo__paso { position: relative; background: var(--papel-2); border: 1px solid var(--linea); border-radius: 12px; padding: 12px; margin: 0 24px 0 0; line-height: 1.45; }
+.flujo__paso::after { content: "→"; position: absolute; right: -21px; top: 50%; transform: translateY(-50%); color: var(--acento); font-weight: 700; font-size: 1.2rem; }
+.flujo__paso:last-child { margin-right: 0; }
+.flujo__paso:last-child::after { content: none; }
+.flujo__paso b { display: block; color: var(--acento); margin-bottom: 4px; }
+.flujo__paso small { display: block; margin-top: 6px; color: var(--tinta-suave); font-size: 0.8rem; }
+@media (max-width: 820px) {
+  .flujo { grid-template-columns: 1fr; }
+  .flujo__paso { margin: 0 0 26px; }
+  .flujo__paso::after { content: "↓"; right: 50%; top: auto; bottom: -24px; transform: translateX(50%); }
+}
 
 /* ============================================================
    PROCESO 8: Retos de opción múltiple
@@ -336,7 +379,7 @@ table.datos tr.destacada td { background: var(--acento-suave); font-weight: 600;
 .barras-palabras .relleno { display: block; height: 100%; background: var(--g-serie1); width: 0; transition: width 0.6s cubic-bezier(.2,.8,.2,1); }
 .barras-palabras .elegida .relleno { background: var(--g-serie2); }
 .generadas { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
-.generadas span { background: var(--acento-suave); color: var(--acento); border-radius: 999px; padding: 2px 10px; font-size: 0.9rem; }
+.generadas > span { background: var(--acento-suave); color: var(--acento); border-radius: 999px; padding: 2px 10px; font-size: 0.9rem; }
 
 
 /* ============================================================
@@ -387,3 +430,7 @@ table.datos tr.destacada td { background: var(--acento-suave); font-weight: 600;
   html { scroll-behavior: auto; }
   * { transition: none !important; animation: none !important; }
 }
+
+/* KaTeX guarda, para lectores de pantalla, una copia oculta de cada fórmula con posición absoluta.
+   Sin esta línea, esa copia escapa de las cajas con desplazamiento lateral y ensancha la página en el celular. */
+.tabla-desliza, .formula-grande, .lab__lectura, .katex-display, details.mas, .generadas { position: relative; }
