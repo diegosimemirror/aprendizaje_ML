@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>De una pregunta a una estimación · Econometría 1</title>
+<meta name="description" content="Lección interactiva de econometría: preguntas causales, muestras, incertidumbre, intervalos y pruebas, con la ENAHO 2023 y tres estudios peruanos.">
+<meta property="og:title" content="De una pregunta a una estimación · Econometría 1">
+<meta property="og:description" content="Barrio Seguro, retornos a la educación y el SIS: cómo pasar de una pregunta a una estimación con incertidumbre.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 3 Q8 16 15 3' fill='none' stroke='%234338ca' stroke-width='2.2'/%3E%3Ccircle cx='11' cy='8.6' r='2' fill='%23d97706'/%3E%3C/svg%3E">
+
+<!-- KaTeX: dibuja las fórmulas matemáticas escritas entre \( \) y \[ \]. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+<link rel="stylesheet" href="recursos/estilos.css">
+<!-- Tema guardado (claro u oscuro): se aplica antes de dibujar la página, para evitar un parpadeo. -->
+<script>try{var t=localStorage.getItem('aprendizaje-ml-tema');if(t)document.documentElement.setAttribute('data-tema',t);}catch(e){}</script>
+
+<!-- Estilos propios de esta lección: tarjetas de los tres estudios. -->
+<style>
+.estudios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 1.2em 0; }
+.estudio { background: var(--papel-2); border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px 16px; font-family: var(--letra-titulos); font-size: 0.9rem; line-height: 1.5; }
+.estudio h4 { margin: 0 0 6px; font-size: 1rem; color: var(--acento); }
+.estudio dl { margin: 0; }
+.estudio dt { font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--tinta-suave); margin-top: 8px; }
+.estudio dd { margin: 2px 0 0; }
+@media (max-width: 820px) { .estudios { grid-template-columns: 1fr; } }
+</style>
+
+<!-- Herramientas compartidas, datos de la ENAHO 2023 y laboratorios de esta lección. -->
+<script defer src="recursos/comun.js"></script>
+<script defer src="recursos/datos-econometria-01.js"></script>
+<script defer src="recursos/econometria-01.js"></script>
+</head>
+<body data-leccion="econometria-01">
+
+<!-- ============================================================
+     PROCESO 1: Barra superior
+     Insumo:    nombre del curso, partes de la lección
+     Resultado: barra fija con el índice, el contador de retos y el avance de lectura
+     ============================================================ -->
+<header class="barra">
+  <div class="barra__fila">
+    <a class="barra__curso" href="index.html">Aprendizaje de ML</a>
+    <nav class="barra__partes" aria-label="Partes de la lección">
+      <a href="#p0">Inicio</a>
+      <a href="#p1">1 · Datos</a>
+      <a href="#p2">2 · Probabilidad</a>
+      <a href="#p3">3 · Inferencia</a>
+      <a href="#p4">4 · El código</a>
+      <a href="#p5">5 · Comparar</a>
+      <a href="#cierre">Cierre</a>
+      <a href="#ficha">Ficha</a>
+      <a href="#creditos">Créditos</a>
+    </nav>
+    <span class="barra__retos" id="contador-retos" title="Retos resueltos">0 retos</span>
+    <button class="barra__tema" id="boton-tema" type="button" title="Modo claro u oscuro" aria-label="Cambiar entre modo claro y oscuro">◐</button>
+  </div>
+  <div class="barra__avance" id="avance"></div>
+</header>
+
+<main>
+
+<!-- ============================================================
+     PROCESO 2: Portada y parte 0
+     Insumo:    tres estudios peruanos y la pregunta causal
+     Resultado: el problema que motiva la lección, el contrafactual y las diferencias en diferencias
+     ============================================================ -->
+<section class="contenedor" id="p0">
+  <div class="portada">
+    <p class="portada__etiqueta">Econometría 1 · Taller de Introducción a la Econometría Aplicada</p>
+    <h1>De una pregunta a una estimación con incertidumbre</h1>
+    <p class="portada__sub">Los datos no hablan solos. Para saber si un programa funcionó, primero hay que formular bien la pregunta, decidir con quién comparar y medir cuánto puede equivocarse una estimación. Esta lección recorre ese camino con tres estudios peruanos y la ENAHO 2023.</p>
+    <div class="portada__datos">
+      <span>Clase 1: «Fundamentos de econometría y repaso estadístico»</span>
+      <span>Prof. Alfonso Rodríguez (QLAB · PUCP)</span>
+      <span>26 de noviembre de 2026</span>
+      <span>Lectura activa: 60 a 90 minutos</span>
+    </div>
+  </div>
+
+  <aside class="caja caja--autoria" aria-labelledby="titulo-autoria">
+    <p class="caja__titulo" id="titulo-autoria">Autoría y fuentes</p>
+    <p>Esta lección se basa en el material del <strong>prof. Alfonso Rodríguez</strong> para el «Taller de Introducción a la Econometría Aplicada» (Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública, QLAB–PUCP, 2026): sus diapositivas de la <em>Clase 1 · Fundamentos de econometría y repaso estadístico</em>, sus módulos 1 y 2 del Taller de Econometría (2025) y el archivo de comandos <code>Modulo2.do</code>.</p>
+    <p>Los tres estudios de la clase son de sus autores: <strong>Amaya, Cozzubo, Cueto y Hernández (2021)</strong>, sobre Barrio Seguro; <strong>Yamada (2007)</strong>, sobre los retornos a la educación; y <strong>Bernal, Costa y Ritter</strong> (informe CIES), sobre el SIS y la salud infantil. Los datos son de la <strong>Encuesta Nacional de Hogares (ENAHO) 2023 del INEI</strong>, módulo 500.</p>
+    <p>Texto, laboratorios y código: <strong>Diego Sime con Claude Code</strong>, como material de estudio. Los errores son nuestros, no del profesor ni de los autores citados. <a href="#creditos">Ver todos los créditos</a>.</p>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">Cómo usar esta página</p>
+    <p>Lee en orden. Cada parte empieza con un problema y un laboratorio; después vienen los retos, lo que debes recordar y, al final, la fórmula con cada símbolo explicado. La parte 4 explica el código de Stata proceso por proceso, con su equivalente en Python y en Excel. Esta lección se apoya en la <a href="leccion-01.html">lección 1 de machine learning</a>: cuando un tema ya está allí, la página te lleva a esa parte.</p>
+  </aside>
+
+  <h2 style="margin-top:1.4em">Tres preguntas peruanas</h2>
+  <p>La clase empezó con tres estudios. Cada uno hace una pregunta que un gestor público reconoce:</p>
+  <ul>
+    <li>¿La estrategia <strong>Barrio Seguro</strong> redujo el miedo a caminar de noche?</li>
+    <li>¿Vale la pena estudiar una <strong>carrera superior</strong>? ¿Cuánto más gana quien estudia un año más?</li>
+    <li>¿El <strong>SIS</strong> mejora la salud de los niños menores de cinco años?</li>
+  </ul>
+  <p>Las tres preguntas piden lo mismo: saber qué <em>cambia</em> cuando alguien recibe un programa o más educación. Eso es una pregunta <strong>causal</strong>. Y los datos, por sí solos, no la responden.</p>
+
+  <aside class="caja caja--reto" data-reto="e0">
+    <p class="caja__titulo">Reto 0.1</p>
+    <p>Supón que en los barrios con Barrio Seguro hay menos personas con miedo que en los demás barrios. ¿Basta eso para decir que el programa redujo el miedo?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Pregúntate por qué esos barrios recibieron el programa. ¿Eran iguales a los demás antes de recibirlo?">Sí: si hay menos miedo donde está el programa, el programa lo causó</button>
+      <button class="opcion" type="button" data-correcta>No: los barrios elegidos podían ser distintos desde el inicio</button>
+      <button class="opcion" type="button" data-pista="Una muestra más grande no corrige que los dos grupos sean distintos desde el principio.">No: falta una muestra más grande</button>
+    </div>
+    <p class="respuesta">Correcto. Barrio Seguro eligió barrios con mucho delito. Si compararas «barrios con programa» frente a «barrios sin programa», mezclarías dos cosas: el efecto del programa y las diferencias que ya existían. Por eso el estudio compara los barrios intervenidos con <strong>barrios también focalizados que aún no recibían el programa</strong> (diapositiva 6). Elegir con quién comparar es la mitad del trabajo de la econometría.</p>
+  </aside>
+
+  <h3>Describir, predecir o estimar un efecto</h3>
+  <p>La diapositiva 14 distingue tres objetivos. Cada uno hace una pregunta distinta sobre el mismo ingreso:</p>
+  <div class="tabla-desliza">
+  <table class="datos">
+    <thead><tr><th>Objetivo</th><th>Pregunta</th><th>Qué necesita</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Describir</strong></td><td>¿Cuál es el ingreso promedio de los trabajadores?</td><td>Una buena muestra y un buen resumen.</td></tr>
+      <tr><td><strong>Predecir</strong></td><td>¿Qué ingreso esperamos para alguien con ciertas características?</td><td>Un modelo que acierte con casos nuevos. Es el terreno del machine learning.</td></tr>
+      <tr><td><strong>Estimar un efecto</strong></td><td>¿Cómo cambiaría el ingreso de una persona si recibiera más educación?</td><td>Además, una comparación que separe el efecto de otras diferencias. Es el terreno de la inferencia causal.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="util">elegir el objetivo antes de mirar los datos decide qué método usar y qué conclusión es legítima. Es la misma distinción de Breiman entre las dos culturas, que viste en la <a href="leccion-01.html#p5">parte 5 de la lección 1</a>: el machine learning predice; la econometría causal busca el efecto.</p>
+
+  <h3>Cómo leer un estudio: cuatro preguntas</h3>
+  <ol>
+    <li><strong>Pregunta</strong>: ¿qué problema económico o social investiga?</li>
+    <li><strong>Datos y comparación</strong>: ¿a quiénes observa y qué grupos compara?</li>
+    <li><strong>Hallazgos</strong>: ¿qué resultados reportan los autores?</li>
+    <li><strong>Interpretación</strong>: ¿qué conclusiones permiten sostener esos resultados, y para qué población?</li>
+  </ol>
+
+  <div class="estudios">
+    <article class="estudio">
+      <h4>Barrio Seguro</h4>
+      <dl>
+        <dt>Pregunta</dt><dd>¿Qué cambió en los barrios intervenidos?</dd>
+        <dt>Datos</dt><dd>ENAPRES 2011–2019 y límites de los barrios del MININTER.</dd>
+        <dt>Comparación</dt><dd>Barrios intervenidos frente a barrios focalizados aún no intervenidos: <strong>diferencias en diferencias</strong> con incorporación progresiva.</dd>
+        <dt>Hallazgo</dt><dd>Miedo al caminar de noche: \(-0{,}079\) (7,9 puntos menos). Vigilancia integrada: \(+0{,}055\). Victimización: \(0{,}004\), sin efecto claro.</dd>
+        <dt>Qué la hace convincente</dt><dd>Los controles también fueron elegidos por el programa: se parecen a los tratados.</dd>
+      </dl>
+    </article>
+    <article class="estudio">
+      <h4>Retornos a la educación</h4>
+      <dl>
+        <dt>Pregunta</dt><dd>¿Cuánto más gana quien estudia más, y cómo varía entre grupos?</dd>
+        <dt>Datos</dt><dd>ENNIV y ENAHO, trabajadores urbanos, años de 1985 a 2004.</dd>
+        <dt>Comparación</dt><dd>Personas con distinta escolaridad, con la <strong>ecuación de Mincer</strong> (controla la experiencia).</dd>
+        <dt>Hallazgo</dt><dd>Retorno por año (ENAHO 2004): mujeres 9,3 %, hombres 10,5 %, asalariados 12,5 %, independientes 6,5 %.</dd>
+        <dt>Qué falta</dt><dd>Quien estudia más puede diferir en habilidad o recursos familiares.</dd>
+      </dl>
+    </article>
+    <article class="estudio">
+      <h4>SIS y salud infantil</h4>
+      <dl>
+        <dt>Pregunta</dt><dd>¿Ser elegible al SIS mejora la salud de los menores de cinco años?</dd>
+        <dt>Datos</dt><dd>ENDES 2012–2014, registros administrativos y accesibilidad.</dd>
+        <dt>Comparación</dt><dd>Hogares justo arriba y justo abajo del umbral del índice de focalización: <strong>regresión discontinua</strong>.</dd>
+        <dt>Hallazgo</dt><dd>IMC estandarizado: \(-0{,}152\) (error estándar 0,061). Anemia: \(0{,}018\) (0,033), sin evidencia.</dd>
+        <dt>Qué la hace convincente</dt><dd>Cerca del umbral, los hogares son casi iguales; solo cambia la elegibilidad.</dd>
+      </dl>
+    </article>
+  </div>
+
+  <aside class="caja caja--filosofia">
+    <p class="caja__titulo">Puente con la filosofía: el contrafactual</p>
+    <p><strong>El problema.</strong> Para saber si Barrio Seguro redujo el miedo, necesitaríamos ver <em>el mismo barrio</em> en el mismo año con el programa y sin él. Pero un barrio solo vive una de las dos historias. La otra, la que no ocurrió, se llama <strong>contrafactual</strong>.</p>
+    <p><strong>La historia.</strong> Hume (1748, <em>Investigación sobre el entendimiento humano</em>, sección 7) dio dos definiciones de causa. La segunda ya es contrafáctica: una causa es aquello sin lo cual el efecto no habría existido. Lewis (1973) convirtió esa idea en una teoría de la causalidad con «mundos posibles». Holland (1986) le puso nombre estadístico al obstáculo: el <strong>problema fundamental de la inferencia causal</strong>. Nunca observamos los dos resultados de la misma unidad.</p>
+    <p><strong>La salida.</strong> Si no podemos ver el mundo que no ocurrió, lo <em>aproximamos</em> con otro grupo que se parezca. Cada estudio de la clase propone una aproximación distinta: barrios aún no intervenidos, hogares justo al otro lado del umbral, personas con la misma experiencia.</p>
+    <p><strong>Por qué te importa.</strong> Toda la econometría causal es el arte de construir un contrafactual creíble. Cuando leas un estudio, pregunta primero: ¿quién hace el papel del mundo que no ocurrió?</p>
+  </aside>
+
+  <figure class="lab lab--ancho" id="demo-did">
+    <p class="lab__titulo">Laboratorio 0 · El contrafactual y las diferencias en diferencias</p>
+    <p class="lab__guia">Un ejemplo inventado, inspirado en Barrio Seguro: porcentaje de vecinos con miedo a caminar de noche, antes y después del programa. La línea punteada es el contrafactual: lo que habría pasado en los barrios tratados sin el programa. Mueve los controles.</p>
+    <canvas id="did-lienzo" aria-label="Dos grupos antes y después del programa, con el contrafactual"></canvas>
+    <div class="leyenda"><span style="--c:var(--g-serie1)">Barrios con el programa (tratados)</span><span style="--c:var(--g-serie3)">Barrios focalizados aún sin el programa (control)</span><span style="--c:var(--g-eje)">Contrafactual de los tratados</span></div>
+    <div class="lab__controles">
+      <div class="lab__control"><label for="did-e">Efecto real del programa:</label><input type="range" id="did-e" min="-20" max="8" step="1" value="-8"><output id="did-e-out"></output></div>
+      <div class="lab__control"><label for="did-d">Diferencia inicial entre grupos:</label><input type="range" id="did-d" min="0" max="25" step="1" value="15"><output id="did-d-out"></output></div>
+      <div class="lab__control"><label for="did-t">Tendencia común (lo que cambia en todos):</label><input type="range" id="did-t" min="-10" max="10" step="1" value="5"><output id="did-t-out"></output></div>
+      <div class="lab__control"><label for="did-p">Tendencia propia de los tratados:</label><input type="range" id="did-p" min="-8" max="8" step="1" value="0"><output id="did-p-out"></output></div>
+    </div>
+    <p class="lab__lectura" id="did-lectura" aria-live="polite"></p>
+    <p class="nota-pie">Cifras inventadas para el ejemplo. El estudio real usa una versión con incorporación progresiva de los barrios (Callaway y Sant'Anna, citados por Amaya y otros, 2021).</p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="e1">
+    <p class="caja__titulo">Reto 0.2</p>
+    <p>Pon la diferencia inicial en 20 y el efecto real en −8 (el programa <em>reduce</em> el miedo en 8 puntos). Con la tendencia propia en 0, ¿qué dice la comparación ingenua «después: tratados menos control»?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="La comparación ingenua suma el efecto real y la diferencia que ya existía: −8 + 20.">−8: acierta el efecto</button>
+      <button class="opcion" type="button" data-correcta>+12: parece que el programa aumentó el miedo</button>
+      <button class="opcion" type="button" data-pista="Mira la lectura del laboratorio: la comparación ingenua no resta la diferencia inicial.">0: no se ve ningún efecto</button>
+    </div>
+    <p class="respuesta">Correcto, y es inquietante. Los barrios tratados empezaron con 20 puntos más de miedo; el programa les quitó 8. Después, siguen 12 puntos arriba. La comparación ingenua culparía al programa. La <strong>diferencia en diferencias</strong> resta lo que ya separaba a los grupos y recupera el −8, siempre que los dos grupos hubieran seguido la misma tendencia sin el programa. Prueba ahora a mover la «tendencia propia»: ese supuesto falla y la estimación se sesga.</p>
+  </aside>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 0 · Inicio">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>Describir, predecir y estimar un efecto son tres objetivos distintos. Solo el tercero es causal.</li>
+      <li>El <strong>contrafactual</strong> es lo que habría pasado sin el programa. Nunca se observa: se aproxima con un grupo de comparación.</li>
+      <li>Comparar «con programa» frente a «sin programa» mezcla el efecto con las <strong>diferencias iniciales</strong> (sesgo de selección).</li>
+      <li>La <strong>diferencia en diferencias</strong> resta la diferencia inicial. Funciona si, sin el programa, los dos grupos habrían seguido tendencias paralelas.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \widehat{\text{DiD}} = \big(\bar Y_{T,\,\text{después}} - \bar Y_{T,\,\text{antes}}\big) - \big(\bar Y_{C,\,\text{después}} - \bar Y_{C,\,\text{antes}}\big) \]</div>
+    <p class="lee">el efecto estimado es el cambio en los tratados menos el cambio en el grupo de control. El cambio del control representa lo que habría cambiado en los tratados sin el programa.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th><th>En el laboratorio</th></tr></thead>
+      <tbody>
+        <tr><td>\(\bar Y\)</td><td>«ye barra»</td><td>Un promedio: aquí, el porcentaje de vecinos con miedo.</td><td>La altura de cada punto</td></tr>
+        <tr><td>\(T,\ C\)</td><td>«te», «ce»</td><td>Tratados (con el programa) y control (sin el programa).</td><td>Línea índigo y línea verde</td></tr>
+        <tr><td>\(\widehat{\ }\)</td><td>«sombrero»</td><td>Marca un valor estimado con los datos, no el valor verdadero.</td><td>La DiD de la lectura</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>Clase 01, diapositivas 4–16 (motivación, los tres estudios, los objetivos y la estructura de una investigación) y 67–72 (diseños de Barrio Seguro, Mincer y el SIS). Resultados citados en las diapositivas 7, 9, 11, 68 y 70: Amaya y otros (2021), tablas 3–5; Yamada (2007), cuadros 3, 4, 6 y 8; Bernal, Costa y Ritter, tabla 2.</p>
+  </aside>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 3: Parte 1. Datos y descripción
+     Insumo:    100 estudiantes simulados, seis edades de la clase y la ENAHO 2023
+     Resultado: población y muestra, diseños de muestreo, resúmenes y el código 999999
+     ============================================================ -->
+<section class="parte" id="p1">
+<div class="contenedor">
+  <p class="parte__num">Parte 1</p>
+  <h2>Datos y descripción</h2>
+  <p class="parte__pregunta">¿Qué representa cada fila, y a quién representa la muestra?</p>
+
+  <h3>1.1 Qué es una fila</h3>
+  <p>Antes de calcular, pregúntate qué representa cada observación: ¿una persona, un hogar, un distrito, un mes? Esa es la <strong>unidad de observación</strong>. Hay tres estructuras de datos (diapositiva 18):</p>
+  <div class="tabla-desliza">
+  <table class="datos">
+    <thead><tr><th>Estructura</th><th>Qué observa</th><th>Ejemplos peruanos</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Corte transversal</strong></td><td>Muchas unidades en un mismo periodo.</td><td>ENAHO, ENDES y ENARES de un año.</td></tr>
+      <tr><td><strong>Serie de tiempo</strong></td><td>Una variable a lo largo del tiempo.</td><td>Inflación, tipo de cambio o PBI del BCRP.</td></tr>
+      <tr><td><strong>Panel</strong></td><td>Las mismas unidades en varios periodos.</td><td>El panel de la ENAHO.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>1.2 Población, muestra y parámetro</h3>
+  <p>La <strong>población</strong> son las unidades sobre las que quieres concluir: por ejemplo, todos los trabajadores del Perú. La <strong>muestra</strong> son las que de verdad observas: las personas que respondieron la ENAHO. Un <strong>parámetro</strong> es una característica de la población, como el ingreso promedio de todos (\(\mu\)). Casi nunca lo conoces. Lo <strong>estimas</strong> con la muestra (\(\bar x\)).</p>
+  <p>La pregunta clave es <em>cómo</em> se eligió la muestra. En un diseño <strong>probabilístico</strong>, cada unidad tiene una probabilidad de entrar conocida y mayor que cero. En uno <strong>no probabilístico</strong> (cuotas, conveniencia, bola de nieve), esa probabilidad no se conoce, y generalizar exige supuestos adicionales.</p>
+
+  <figure class="lab lab--ancho" id="demo-muestreo">
+    <p class="lab__titulo">Laboratorio 1 · Cinco maneras de elegir 10 estudiantes</p>
+    <p class="lab__guia">Una universidad tiene 100 estudiantes en cinco facultades (una fila doble por facultad). Cada círculo muestra una edad. Elige un método y toma una muestra de 10. Luego repítelo 1 000 veces y mira dónde caen los promedios.</p>
+    <div class="lab__dos">
+      <canvas id="muestreo-rejilla" aria-label="Rejilla de 100 estudiantes con la muestra resaltada"></canvas>
+      <canvas id="muestreo-hist" aria-label="Promedios de 1 000 muestras del método elegido"></canvas>
+    </div>
+    <div class="lab__controles" role="group" aria-label="Método de muestreo">
+      <button class="boton boton--hueco" type="button" data-metodo="simple" aria-pressed="true">Aleatorio simple</button>
+      <button class="boton boton--hueco" type="button" data-metodo="sistematico" aria-pressed="false">Sistemático</button>
+      <button class="boton boton--hueco" type="button" data-metodo="estratificado" aria-pressed="false">Estratificado</button>
+      <button class="boton boton--hueco" type="button" data-metodo="conglomerados" aria-pressed="false">Por conglomerados</button>
+      <button class="boton boton--hueco" type="button" data-metodo="conveniencia" aria-pressed="false">Por conveniencia</button>
+    </div>
+    <div class="lab__controles">
+      <button class="boton" type="button" id="muestreo-una">Tomar una muestra</button>
+      <button class="boton boton--hueco" type="button" id="muestreo-mil">Repetir 1 000 veces</button>
+    </div>
+    <p class="lab__lectura" id="muestreo-lectura" aria-live="polite"></p>
+    <div class="tabla-desliza"><table class="datos" id="muestreo-tabla"><thead><tr><th>Método</th><th>Cómo elige</th><th class="num">Promedio de los 1 000 promedios</th><th class="num">Sesgo</th><th class="num">Dispersión (error estándar)</th></tr></thead><tbody></tbody></table></div>
+    <p class="nota-pie">Edades simuladas. En esta universidad, los estudiantes más jóvenes pasan más tiempo en el campus: por eso son los «más accesibles».</p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="e2">
+    <p class="caja__titulo">Reto 1.1</p>
+    <p>Mira la tabla del laboratorio. ¿Qué método da promedios muy parecidos entre sí, pero lejos de la edad promedio real?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="El aleatorio simple acierta en promedio: su sesgo es casi cero.">Aleatorio simple</button>
+      <button class="opcion" type="button" data-pista="Por conglomerados acierta en promedio, pero cada muestra es muy distinta de otra: mucha dispersión.">Por conglomerados</button>
+      <button class="opcion" type="button" data-correcta>Por conveniencia</button>
+    </div>
+    <p class="respuesta">Correcto. La muestra por conveniencia siempre elige entre los mismos estudiantes accesibles, que son más jóvenes. Sus promedios varían poco, pero todos fallan hacia abajo: es un <strong>sesgo</strong>. Tomar más estudiantes así no lo corrige. Los conglomerados tienen el problema contrario: aciertan en promedio, pero cada muestra depende de qué facultad salió, así que varían mucho.</p>
+  </aside>
+
+  <p class="util">la ENAHO, la ENDES y la ENAPRES son muestras probabilísticas, estratificadas y por etapas (diapositiva 21). Ese diseño permite generalizar al país, pero también cambia cómo se calcula la incertidumbre. Una encuesta por redes sociales es una muestra por conveniencia: puede tener miles de respuestas y aun así estar sesgada.</p>
+
+  <h3>1.3 Resumir una muestra: centro y dispersión</h3>
+  <p>El ejemplo de la clase (diapositivas 22–24): seis estudiantes de 19, 22, 21, 23, 20 y 22 años.</p>
+  <ul>
+    <li><strong>Media</strong>: la suma entre seis. \(\bar x = \frac{19+22+21+23+20+22}{6} \approx 21{,}17\) años.</li>
+    <li><strong>Mediana</strong>: el valor del medio al ordenar (19, 20, <strong>21, 22</strong>, 22, 23). Con seis datos, el promedio de los dos centrales: 21,5 años.</li>
+    <li><strong>Moda</strong>: el valor que más se repite: 22 años.</li>
+    <li><strong>Varianza</strong>: el promedio de las distancias al cuadrado respecto de la media, dividido entre \(n-1\): \(s^2 \approx 2{,}17\) años².</li>
+    <li><strong>Desviación estándar</strong>: la raíz de la varianza, en las unidades originales: \(s \approx 1{,}47\) años.</li>
+  </ul>
+  <p>¿Por qué se divide entre \(n - 1\) y no entre \(n\)? Porque la media \(\bar x\) se calculó con los mismos datos y queda «pegada» a ellos. Dividir entre \(n-1\) corrige ese efecto y, en promedio, acierta con la varianza de la población.</p>
+
+  <h3>1.4 La ENAHO 2023: el ingreso mensual y un número imposible</h3>
+  <p>El ejercicio de la clase calcula el ingreso mensual de la ocupación principal con la ENAHO 2023 (módulo 500). Si sigues el archivo de comandos al pie de la letra, el ingreso promedio sale <strong>S/ 27 997 al mes</strong>. La mediana sale S/ 1 200. Uno de los dos números es imposible.</p>
+
+  <figure class="lab lab--ancho" id="demo-enaho">
+    <p class="lab__titulo">Laboratorio 2 · La media, la mediana y el código 999999</p>
+    <p class="lab__guia">Ingreso mensual de 24 880 trabajadores de la ENAHO 2023 (sin factor de expansión). Marca la casilla para incluir a las 364 personas cuyo ingreso figura como 999999. Cambia la vista para ver el logaritmo del ingreso, en total y por sexo.</p>
+    <canvas id="enaho-lienzo" aria-label="Histograma del ingreso mensual con la media y la mediana"></canvas>
+    <div class="leyenda" id="enaho-leyenda"></div>
+    <div class="lab__controles">
+      <div class="lab__control" role="group" aria-label="Vista">
+        <button class="boton boton--hueco" type="button" data-vista="soles" aria-pressed="true">Ingreso en soles</button>
+        <button class="boton boton--hueco" type="button" data-vista="log" aria-pressed="false">Logaritmo</button>
+        <button class="boton boton--hueco" type="button" data-vista="sexo" aria-pressed="false">Logaritmo por sexo</button>
+      </div>
+      <div class="lab__control"><input type="checkbox" id="enaho-codigo"><label for="enaho-codigo">Incluir a los 364 con el código 999999</label></div>
+    </div>
+    <p class="lab__lectura" id="enaho-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="e3">
+    <p class="caja__titulo">Reto 1.2</p>
+    <p>Con la casilla marcada, la media pasa de S/ 1 598 a S/ 27 997, pero la mediana no se mueve. ¿Por qué?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="364 personas son solo el 1,5 % de la muestra. ¿Puede tan poca gente mover tanto un promedio?">Porque muchos peruanos ganan más de S/ 20 000 al mes</button>
+      <button class="opcion" type="button" data-correcta>Porque 999999 es un código de «no sabe / no responde», y la media lo suma como si fuera ingreso</button>
+      <button class="opcion" type="button" data-pista="El logaritmo no explica el salto: la media en soles salta antes de cualquier transformación.">Porque el logaritmo deforma los datos</button>
+    </div>
+    <p class="respuesta">Correcto. En la ENAHO, 999999 en la pregunta del ingreso significa «no sabe / no responde». Multiplicado por 30 (pago diario), se vuelve S/ 29 999 970. Basta el 1,5 % de la muestra con ese código para multiplicar la media por 17. La mediana solo mira el valor del medio, así que no se entera. Es el mismo fenómeno del paciente de 25 días en la <a href="leccion-01.html#p1">lección 1</a>: la media se deja arrastrar por los extremos. Es un <strong>faltante disfrazado</strong>, y la parte 4 muestra cómo encontrarlo en el código.</p>
+  </aside>
+
+  <p>¿Por qué el logaritmo? El ingreso tiene una cola larga a la derecha: pocas personas ganan mucho. El logaritmo comprime esa cola y deja una forma parecida a una campana. Además, una diferencia en logaritmos se lee casi como una diferencia porcentual: es la escala de la ecuación de Mincer.</p>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 1 · Datos y descripción">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>Antes de calcular, define la <strong>unidad de observación</strong> y la <strong>población</strong> sobre la que quieres concluir.</li>
+      <li>Un <strong>parámetro</strong> (\(\mu\)) es de la población y casi nunca se conoce; una <strong>estimación</strong> (\(\bar x\)) sale de la muestra.</li>
+      <li>Una muestra por conveniencia puede ser grande y estar sesgada. El diseño importa más que el tamaño.</li>
+      <li>La media se deja arrastrar por valores extremos y códigos; la mediana, no. Revisa siempre los <strong>faltantes disfrazados</strong> (999999, −99, 0).</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \bar x = \frac{1}{n}\sum_{i=1}^{n} x_i \qquad\qquad s^2 = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar x)^2 \qquad\qquad s = \sqrt{s^2} \]</div>
+    <p class="lee">la media es la suma de los datos entre su número. La varianza promedia las distancias al cuadrado respecto de la media, dividiendo entre \(n-1\). La desviación estándar es su raíz.</p>
+    <p>Con las seis edades: \(\bar x = \frac{127}{6} \approx 21{,}17\); \(s^2 = \frac{10{,}83}{5} \approx 2{,}17\); \(s \approx 1{,}47\).</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th><th>En el ejemplo</th></tr></thead>
+      <tbody>
+        <tr><td>\(x_i\)</td><td>«equis sub i»</td><td>El dato de la observación \(i\).</td><td>\(x_1 = 19\)</td></tr>
+        <tr><td>\(n\)</td><td>«ene»</td><td>El tamaño de la muestra.</td><td>6</td></tr>
+        <tr><td>\(\bar x\)</td><td>«equis barra»</td><td>La media de la muestra.</td><td>21,17 años</td></tr>
+        <tr><td>\(s^2,\ s\)</td><td>«ese cuadrado», «ese»</td><td>Varianza y desviación estándar de la muestra.</td><td>2,17 años²; 1,47 años</td></tr>
+        <tr><td>\(\mu\)</td><td>«mu»</td><td>La media de la población: el parámetro que no conocemos.</td><td>La edad promedio de los 100 estudiantes</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>Clase 01, diapositivas 17–26 (unidad de observación, población y muestra, diseños de muestreo, encuestas peruanas, media, mediana, moda, dispersión y muestras no probabilísticas) y 50–53 (aplicación con la ENAHO 2023). El archivo <code>Modulo2.do</code> no excluye el código 999999; la parte 4 propone la línea que falta.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 4: Parte 2. Probabilidad
+     Insumo:    dos monedas y el logaritmo del ingreso de la ENAHO
+     Resultado: esperanza, varianza, la normal y su límite como aproximación
+     ============================================================ -->
+<section class="parte" id="p2">
+<div class="contenedor">
+  <p class="parte__num">Parte 2</p>
+  <h2>Probabilidad</h2>
+  <p class="parte__pregunta">¿Cómo describir lo que todavía no ha ocurrido?</p>
+
+  <p>La <a href="leccion-01.html#p3">parte 3 de la lección 1</a> ya explicó el espacio de probabilidad, la probabilidad condicional y la esperanza. Aquí solo repasamos el ejemplo de la clase y agregamos la distribución normal.</p>
+
+  <h3>2.1 Dos monedas</h3>
+  <p>Lanzas una moneda dos veces. Los resultados posibles son \(S = \{cc,\ cs,\ sc,\ ss\}\), donde \(c\) es cara y \(s\) es sello. Llama \(X\) al número de caras (diapositivas 28–33):</p>
+  <div class="tabla-desliza">
+  <table class="datos" style="max-width:520px">
+    <thead><tr><th>Resultado</th><th class="num">\(X\)</th><th class="num">Probabilidad</th></tr></thead>
+    <tbody>
+      <tr><td>ss</td><td class="num">0</td><td class="num">\(\tfrac14\)</td></tr>
+      <tr><td>cs o sc</td><td class="num">1</td><td class="num">\(\tfrac12\)</td></tr>
+      <tr><td>cc</td><td class="num">2</td><td class="num">\(\tfrac14\)</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>La <strong>esperanza</strong> pondera cada valor por su probabilidad: \(E[X] = 0\cdot\tfrac14 + 1\cdot\tfrac12 + 2\cdot\tfrac14 = 1\). La <strong>varianza</strong> pondera las distancias al cuadrado respecto de esa esperanza: \(\operatorname{Var}(X) = \tfrac12\), así que \(\sigma \approx 0{,}707\). Fíjate en la diferencia con la parte 1: allí resumías datos ya observados (\(\bar x\), \(s\)); aquí describes una distribución <em>antes</em> de observar (\(\mu\), \(\sigma\)).</p>
+
+  <aside class="caja caja--reto" data-reto="e4">
+    <p class="caja__titulo">Reto 2.1</p>
+    <p>¿Cuál es la probabilidad de obtener al menos una cara, \(P(X \ge 1)\)?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Esa es la probabilidad de exactamente una cara. «Al menos una» también incluye cc.">1/2</button>
+      <button class="opcion" type="button" data-correcta>3/4</button>
+      <button class="opcion" type="button" data-pista="Cuenta los resultados con al menos una c: cs, sc y cc.">1/4</button>
+    </div>
+    <p class="respuesta">Correcto. El atajo de la diapositiva 30: \(P(X \ge 1) = 1 - P(X = 0) = 1 - \tfrac14 = \tfrac34\). Calcular el complemento suele ser más fácil que sumar todos los casos.</p>
+  </aside>
+
+  <h3>2.2 La normal: ¿sirve para los ingresos?</h3>
+  <p>La distribución <strong>normal</strong> \(N(\mu, \sigma^2)\) es la campana: \(\mu\) ubica el centro y \(\sigma\) la anchura. Para calcular con ella, se <strong>estandariza</strong>: \(Z = \frac{X-\mu}{\sigma}\) mide a cuántas desviaciones estándar está un valor del centro. El logaritmo del ingreso de la ENAHO tiene una forma parecida a una campana. ¿Basta para usar la normal?</p>
+
+  <figure class="lab lab--ancho" id="demo-normal">
+    <p class="lab__titulo">Laboratorio 3 · ¿Qué proporción gana menos de cierto monto?</p>
+    <p class="lab__guia">Barras: el logaritmo del ingreso en la ENAHO 2023. Curva: la normal con la misma media (7,04) y la misma desviación estándar (0,90). Mueve el monto y compara la respuesta de la normal con la proporción real.</p>
+    <canvas id="normal-lienzo" aria-label="Histograma del logaritmo del ingreso con la curva normal y el área sombreada"></canvas>
+    <div class="leyenda"><span style="--c:var(--g-serie1)">Datos de la ENAHO</span><span style="--c:var(--g-serie2)">Curva normal</span></div>
+    <div class="lab__controles">
+      <div class="lab__control"><label for="normal-x">Monto mensual: S/</label><input type="range" id="normal-x" min="300" max="5000" step="25" value="1000"><output id="normal-x-out"></output></div>
+    </div>
+    <p class="lab__lectura" id="normal-lectura" aria-live="polite"></p>
+  </figure>
+
+  <p>La normal es una <strong>aproximación</strong>, y aquí falla por varios puntos. Una razón se ve en las barras: muchas personas reportan montos redondos (S/ 1 000, S/ 1 200, S/ 1 500) o la remuneración mínima de 2023 (S/ 1 025). Esos «picos» no existen en una campana. La diapositiva 41 lo advierte: la calidad de la aproximación depende de la distribución de los datos.</p>
+
+  <p>Por último, el supuesto de partida de casi todo lo que sigue: una <strong>muestra i.i.d.</strong>, es decir, observaciones independientes e idénticamente distribuidas (diapositiva 35). Ya lo viste en la <a href="leccion-01.html#p4">parte 4 de la lección 1</a>. El diseño de una encuesta como la ENAHO obliga a ajustar este modelo.</p>
+
+  <p class="util">la normal da probabilidades con una sola fórmula y es la base de los intervalos y las pruebas de la parte 3. Pero hay que comprobar que se parezca a los datos antes de confiar en ella.</p>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 2 · Probabilidad">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>\(\bar x\) y \(s\) resumen datos observados; \(\mu = E[X]\) y \(\sigma\) describen una distribución antes de observar.</li>
+      <li>\(P(\text{al menos uno}) = 1 - P(\text{ninguno})\).</li>
+      <li>Estandarizar, \(Z = \frac{X-\mu}{\sigma}\), cuenta cuántas desviaciones estándar te separan del centro.</li>
+      <li>La normal es una aproximación: compruébala con los datos (los ingresos tienen picos en montos redondos).</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \mu = E[X] = \sum_x x\,p(x) \qquad \sigma^2 = \operatorname{Var}(X) = E\big[(X-\mu)^2\big] \qquad Z = \frac{X - \mu}{\sigma} \sim N(0,\,1) \]</div>
+    <p class="lee">la esperanza es el promedio ponderado por las probabilidades; la varianza, la distancia al cuadrado esperada respecto de la esperanza. Si \(X\) es normal, \(Z\) es una normal estándar.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(p(x)\)</td><td>«pe de equis»</td><td>La probabilidad de que \(X\) valga \(x\).</td></tr>
+        <tr><td>\(\sim\)</td><td>«se distribuye como»</td><td>Dice de qué distribución viene una variable.</td></tr>
+        <tr><td>\(N(\mu,\sigma^2)\)</td><td>«normal de media mu y varianza sigma cuadrado»</td><td>La campana con centro \(\mu\) y anchura \(\sigma\).</td></tr>
+        <tr><td>\(\Phi(z)\)</td><td>«fi de zeta»</td><td>La probabilidad acumulada de la normal estándar: \(P(Z \le z)\).</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>Clase 01, diapositivas 27–35 (resultados y eventos, variable aleatoria, reglas de probabilidad, discretas y continuas, esperanza, varianza, normal y muestra aleatoria) y 58–62 (apéndice de distribuciones: binomial, Poisson, exponencial y normal).</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 5: Parte 3. Inferencia
+     Insumo:    6 000 ingresos de la ENAHO usados como «población»
+     Resultado: distribución muestral, error estándar, intervalos, pruebas y errores
+     ============================================================ -->
+<section class="parte" id="p3">
+<div class="contenedor">
+  <p class="parte__num">Parte 3</p>
+  <h2>Inferencia: cuánto puede equivocarse una estimación</h2>
+  <p class="parte__pregunta">Si tomara otra muestra, ¿cuánto cambiaría mi resultado?</p>
+
+  <p>Para los laboratorios de esta parte, tomamos 6 000 trabajadores de la ENAHO y los tratamos como si fueran <strong>toda la población</strong>. Así conocemos la respuesta verdadera (\(\mu = \text{S/ } 1\,583\)) y podemos ver cuánto se equivocan las muestras. En la vida real no la conoces: por eso necesitas la teoría.</p>
+
+  <h3>3.1 Parámetro, estimador y estimación</h3>
+  <div class="tabla-desliza">
+  <table class="datos">
+    <thead><tr><th>Concepto</th><th>Qué es</th><th>Ejemplo</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Parámetro</strong></td><td>Una característica de la población. Es fija y desconocida.</td><td>\(\mu\): el ingreso promedio de todos</td></tr>
+      <tr><td><strong>Estimador</strong></td><td>La regla que aplicas a la muestra. Antes de tomar la muestra, su resultado es aleatorio.</td><td>\(\bar X\): «suma los ingresos y divide entre \(n\)»</td></tr>
+      <tr><td><strong>Estimación</strong></td><td>El número que da la regla con tu muestra.</td><td>\(\bar x = 1\,540\) soles, por ejemplo</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>3.2 La distribución muestral y el error estándar</h3>
+  <p>Imagina repetir la encuesta muchas veces. Cada muestra da un promedio distinto. La distribución de esos promedios se llama <strong>distribución muestral</strong>. Su desviación estándar mide cuánto se equivoca, típicamente, una estimación: es el <strong>error estándar</strong>.</p>
+
+  <figure class="lab lab--ancho" id="demo-dmuestral">
+    <p class="lab__titulo">Laboratorio 4 · Mil encuestas en un segundo</p>
+    <p class="lab__guia">Izquierda: la «población» de 6 000 ingresos (con cola larga). Derecha: los promedios de 1 000 muestras de tamaño \(n\). Cambia \(n\) y compara la anchura de la derecha con la fórmula \(\sigma/\sqrt{n}\).</p>
+    <div class="lab__dos">
+      <canvas id="dm-poblacion" aria-label="Histograma de la población de ingresos"></canvas>
+      <canvas id="dm-medias" aria-label="Histograma de los promedios de 1 000 muestras"></canvas>
+    </div>
+    <div class="leyenda"><span style="--c:var(--g-serie1)">Promedios de las muestras</span><span style="--c:var(--g-serie2)">Normal que predice el teorema del límite central</span><span style="--c:var(--g-serie4)">Media verdadera</span></div>
+    <div class="lab__controles">
+      <div class="lab__control" role="group" aria-label="Tamaño de cada muestra"><span class="suave">n =</span>
+        <button class="boton boton--hueco" type="button" data-n="5" aria-pressed="false">5</button>
+        <button class="boton boton--hueco" type="button" data-n="25" aria-pressed="true">25</button>
+        <button class="boton boton--hueco" type="button" data-n="100" aria-pressed="false">100</button>
+        <button class="boton boton--hueco" type="button" data-n="400" aria-pressed="false">400</button>
+      </div>
+      <button class="boton" type="button" id="dm-sortear">Otras 1 000 muestras</button>
+    </div>
+    <p class="lab__lectura" id="dm-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="e5">
+    <p class="caja__titulo">Reto 3.1</p>
+    <p>Pasa de \(n = 25\) a \(n = 100\): cuatro veces más personas. ¿Qué le pasa al error estándar?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="El error estándar baja con la raíz de n, no con n.">Se divide entre 4</button>
+      <button class="opcion" type="button" data-correcta>Se divide entre 2</button>
+      <button class="opcion" type="button" data-pista="Compara la anchura del histograma de la derecha con n = 25 y con n = 100.">No cambia: la población es la misma</button>
+    </div>
+    <p class="respuesta">Correcto. \(\text{EE} = \sigma/\sqrt{n}\), y \(\sqrt{4} = 2\). Para reducir el error a la mitad necesitas cuatro veces más datos. La desviación estándar de la población (\(\sigma \approx 1\,433\) soles) no cambia: las personas siguen siendo igual de distintas entre sí. Lo que se achica es la incertidumbre del promedio.</p>
+  </aside>
+
+  <p><strong>Desviación estándar frente a error estándar</strong> (diapositiva 42). La desviación estándar describe cuánto difieren las <em>personas</em>. El error estándar describe cuánto difieren los <em>promedios</em> entre muestras. Con más datos, el error estándar baja; la desviación estándar, no.</p>
+
+  <h3>3.3 El intervalo de confianza</h3>
+  <p>Un intervalo combina la estimación y su incertidumbre: \(\bar x \pm 1{,}96 \times \text{EE}\). La pregunta difícil es qué significa el «95 %».</p>
+
+  <figure class="lab lab--ancho" id="demo-ic">
+    <p class="lab__titulo">Laboratorio 5 · Cien intervalos al 95 %</p>
+    <p class="lab__guia">Cada línea es el intervalo de una muestra distinta. Verde: atrapa la media verdadera (la línea roja). Rojo: no la atrapa. Pide otros 100 y cuenta.</p>
+    <canvas id="ic-lienzo" aria-label="Cien intervalos de confianza alrededor de la media verdadera"></canvas>
+    <div class="lab__controles">
+      <div class="lab__control" role="group" aria-label="Tamaño de cada muestra"><span class="suave">n =</span>
+        <button class="boton boton--hueco" type="button" data-n="25" aria-pressed="false">25</button>
+        <button class="boton boton--hueco" type="button" data-n="100" aria-pressed="true">100</button>
+        <button class="boton boton--hueco" type="button" data-n="400" aria-pressed="false">400</button>
+      </div>
+      <button class="boton" type="button" id="ic-otros">Otros 100 intervalos</button>
+    </div>
+    <p class="lab__lectura" id="ic-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="e6">
+    <p class="caja__titulo">Reto 3.2</p>
+    <p>Calculaste un intervalo al 95 % para el ingreso promedio: de S/ 1 400 a S/ 1 700. ¿Qué afirmación es correcta?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="La media verdadera no es aleatoria: es un número fijo. Este intervalo ya la contiene o no la contiene.">Hay 95 % de probabilidad de que la media verdadera esté entre 1 400 y 1 700</button>
+      <button class="opcion" type="button" data-correcta>El procedimiento atrapa la media verdadera en el 95 % de las muestras; este intervalo puede ser uno de los que fallan</button>
+      <button class="opcion" type="button" data-pista="El intervalo habla del promedio, no de las personas. La desviación estándar describe a las personas.">El 95 % de los trabajadores gana entre 1 400 y 1 700</button>
+    </div>
+    <p class="respuesta">Correcto. Es la lectura de la diapositiva 44: lo aleatorio es el intervalo, no el parámetro. Antes de tomar la muestra, el procedimiento tiene 95 % de probabilidad de producir un intervalo que atrape a \(\mu\). Después, este intervalo concreto la atrapa o no; solo que no sabes cuál de los dos casos es. El laboratorio lo muestra: unas 5 de cada 100 líneas salen rojas.</p>
+  </aside>
+
+  <p>Mira el laboratorio con \(n = 25\): suelen fallar más de 5 de cada 100 (en nuestras pruebas, cerca de 9). La fórmula supone que el promedio ya es casi normal, y con ingresos tan asimétricos eso tarda en ocurrir. Con \(n = 400\) la cobertura se acerca al 95 %.</p>
+
+  <h3>3.4 La prueba de hipótesis y el valor-p</h3>
+  <p>A veces la pregunta es un sí o un no: ¿los hombres y las mujeres ganan lo mismo, en promedio? Se escribe como una <strong>hipótesis nula</strong>, \(H_0\): «no hay diferencia», frente a una <strong>alternativa</strong>, \(H_1\): «sí la hay». El estadístico \(T\) mide la distancia entre lo observado y \(H_0\) en unidades de error estándar. El <strong>valor-p</strong> es la probabilidad, si \(H_0\) fuera cierta, de ver una distancia tan grande o mayor.</p>
+
+  <figure class="lab lab--ancho" id="demo-prueba">
+    <p class="lab__titulo">Laboratorio 6 · Probar una diferencia: el error tipo I y la potencia</p>
+    <p class="lab__guia">Cada muestra toma \(n\) hombres y \(n\) mujeres de la «población» y compara el promedio del logaritmo del ingreso. Si \(|T| > 1{,}96\), rechaza \(H_0\) con \(\alpha = 5\,\%\). En el mundo real hay una diferencia; en el otro mundo, mezclamos las etiquetas y la diferencia es cero.</p>
+    <canvas id="prueba-lienzo" aria-label="Distribución del estadístico T en mil muestras, con las zonas de rechazo"></canvas>
+    <div class="lab__controles">
+      <div class="lab__control" role="group" aria-label="Mundo"><span class="suave">Mundo:</span>
+        <button class="boton boton--hueco" type="button" data-mundo="real" aria-pressed="true">Real: hay diferencia</button>
+        <button class="boton boton--hueco" type="button" data-mundo="nula" aria-pressed="false">\(H_0\) es verdad</button>
+      </div>
+      <div class="lab__control" role="group" aria-label="Tamaño de cada grupo"><span class="suave">n por grupo =</span>
+        <button class="boton boton--hueco" type="button" data-n="10" aria-pressed="false">10</button>
+        <button class="boton boton--hueco" type="button" data-n="30" aria-pressed="true">30</button>
+        <button class="boton boton--hueco" type="button" data-n="100" aria-pressed="false">100</button>
+        <button class="boton boton--hueco" type="button" data-n="300" aria-pressed="false">300</button>
+      </div>
+    </div>
+    <div class="lab__controles">
+      <button class="boton" type="button" id="prueba-una">Una muestra</button>
+      <button class="boton boton--hueco" type="button" id="prueba-mil">Repetir 1 000 veces</button>
+    </div>
+    <p class="lab__lectura" id="prueba-lectura" aria-live="polite"></p>
+  </figure>
+
+  <div class="tabla-desliza">
+  <table class="datos">
+    <thead><tr><th>Tu decisión</th><th>\(H_0\) es verdad</th><th>\(H_0\) es falsa</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Rechazar \(H_0\)</strong></td><td><strong>Error tipo I</strong> (probabilidad \(\alpha\)). Ves una diferencia que no existe: un falso positivo.</td><td>Decisión correcta (probabilidad \(1-\beta\): la <strong>potencia</strong>).</td></tr>
+      <tr><td><strong>No rechazar \(H_0\)</strong></td><td>Decisión correcta.</td><td><strong>Error tipo II</strong> (probabilidad \(\beta\)). No ves una diferencia que sí existe: un falso negativo.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>Esta tabla es la <strong>matriz de confusión</strong> de la <a href="leccion-02.html#p3">lección 2 de machine learning</a>, con otros nombres: el error tipo I es un falso positivo, el error tipo II es un falso negativo y la potencia es el <em>recall</em>: de las diferencias que existen, ¿cuántas detectas?</p>
+
+  <aside class="caja caja--reto" data-reto="e7">
+    <p class="caja__titulo">Reto 3.3</p>
+    <p>Una prueba da un valor-p de 0,03. ¿Qué significa?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Esa es la confusión más común: el valor-p se calcula suponiendo que H0 es verdad; no puede decir qué tan probable es H0.">Hay 3 % de probabilidad de que \(H_0\) sea verdad</button>
+      <button class="opcion" type="button" data-correcta>Si \(H_0\) fuera verdad, solo el 3 % de las muestras daría una diferencia tan grande o mayor</button>
+      <button class="opcion" type="button" data-pista="El valor-p no mide el tamaño de la diferencia. Una diferencia mínima puede dar un valor-p pequeño con una muestra enorme.">La diferencia es grande e importante</button>
+    </div>
+    <p class="respuesta">Correcto. El valor-p es \(P(\text{datos tan extremos} \mid H_0)\), no \(P(H_0 \mid \text{datos})\). Es la misma inversión de condicionales que viste con Bayes en la <a href="leccion-01.html#p3">lección 1</a>: \(P(\text{defecto} \mid \text{enfermedad})\) no es \(P(\text{enfermedad} \mid \text{defecto})\). Pasar de una a otra exige saber qué tan creíble era \(H_0\) antes de mirar los datos.</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="e8">
+    <p class="caja__titulo">Reto 3.4</p>
+    <p>En el laboratorio, elige «\(H_0\) es verdad» y repite 1 000 veces. ¿Cerca de qué porcentaje de las muestras rechaza \(H_0\)?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Si H0 es verdad, nunca debería rechazarse… pero el azar a veces produce diferencias grandes.">0 %</button>
+      <button class="opcion" type="button" data-correcta>5 %</button>
+      <button class="opcion" type="button" data-pista="Ese sería el caso si la prueba lanzara una moneda. El umbral 1,96 deja solo el 5 % en las colas.">50 %</button>
+    </div>
+    <p class="respuesta">Correcto. Cuando \(H_0\) es verdad, rechazarla es un error tipo I, y su probabilidad es justo \(\alpha = 5\,\%\): la eliges tú al fijar el umbral. En el mundo real, en cambio, la proporción de rechazos es la potencia, y sube con \(n\): con 10 personas por grupo casi nunca detectas la diferencia de ingresos; con 300, la detectas en cerca de 8 de cada 10 muestras.</p>
+  </aside>
+
+  <p class="util">el error estándar, los intervalos y las pruebas son la manera honesta de reportar una estimación: no solo «cuánto», sino «con cuánta incertidumbre». La diapositiva 49 lo resume: una lectura completa da la estimación con sus unidades, su intervalo y la prueba. Y la relevancia práctica depende de la magnitud, no del valor-p.</p>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 3 · Inferencia">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li><strong>Parámetro</strong> (fijo, desconocido) → <strong>estimador</strong> (regla, aleatoria antes de la muestra) → <strong>estimación</strong> (el número).</li>
+      <li>El <strong>error estándar</strong> \(\sigma/\sqrt{n}\) mide cuánto varían los promedios entre muestras. Cuatro veces más datos lo reducen a la mitad.</li>
+      <li>Un intervalo al 95 % viene de un procedimiento que acierta en el 95 % de las muestras. Lo aleatorio es el intervalo, no \(\mu\).</li>
+      <li>El valor-p es \(P(\text{datos tan extremos} \mid H_0)\), no la probabilidad de que \(H_0\) sea verdad.</li>
+      <li>Error tipo I = falso positivo (\(\alpha\)); error tipo II = falso negativo (\(\beta\)); potencia = \(1 - \beta\), como el <em>recall</em>.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ E[\bar X] = \mu \qquad \operatorname{Var}(\bar X) = \frac{\sigma^2}{n} \qquad \text{EE}(\bar X) = \frac{\sigma}{\sqrt{n}} \approx \frac{s}{\sqrt{n}} \]</div>
+    <div class="formula-grande">\[ \text{IC}_{95\%} = \bar x \pm 1{,}96\,\frac{s}{\sqrt n} \qquad\qquad T = \frac{\bar X - a}{s/\sqrt{n}} \]</div>
+    <p class="lee">el promedio de la muestra acierta en promedio con \(\mu\), y su error estándar baja con la raíz de \(n\). El intervalo suma y resta 1,96 errores estándar. El estadístico \(T\) cuenta cuántos errores estándar separan al promedio del valor \(a\) de la hipótesis nula.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(\bar X\)</td><td>«equis barra mayúscula»</td><td>El estimador: la regla «promedio de la muestra», antes de observarla.</td></tr>
+        <tr><td>\(\text{EE}\)</td><td>«error estándar»</td><td>La desviación estándar del estimador entre muestras (en inglés, <em>standard error</em>, SE).</td></tr>
+        <tr><td>\(1{,}96\)</td><td>«uno coma noventa y seis»</td><td>El valor que deja 2,5 % en cada cola de la normal estándar.</td></tr>
+        <tr><td>\(H_0,\ H_1\)</td><td>«hache cero», «hache uno»</td><td>Hipótesis nula y alternativa.</td></tr>
+        <tr><td>\(a\)</td><td>«a»</td><td>El valor de referencia que afirma \(H_0\).</td></tr>
+        <tr><td>\(\alpha,\ \beta\)</td><td>«alfa», «beta»</td><td>Probabilidad de error tipo I y de error tipo II. Ojo: en la regresión, \(\beta\) también nombra los coeficientes. Son cosas distintas.</td></tr>
+        <tr><td>\(t_{n-1}\)</td><td>«te con ene menos uno grados de libertad»</td><td>La distribución de \(T\) si la población es normal; con muestras grandes se parece a la normal.</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>Clase 01, diapositivas 37–49 (parámetro, estimador y estimación; distribución muestral; teorema del límite central; desviación estándar y error estándar; intervalos; hipótesis; estadístico \(T\); valor-p; errores y potencia; lectura completa de un resultado) y 63–66 (corrección por población finita, intervalo con \(t\) y pruebas unilaterales). El teorema del límite central también está en la <a href="leccion-01.html#p4">parte 4 de la lección 1</a>.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 6: Parte 4. El código, proceso por proceso
+     Insumo:    el archivo Modulo2.do de la clase
+     Resultado: mapa de procesos, bloques comentados (antes → después)
+                y la traducción Stata ↔ Python ↔ Excel
+     ============================================================ -->
+<section class="parte" id="p4">
+<div class="contenedor">
+  <p class="parte__num">Parte 4</p>
+  <h2>El código, proceso por proceso</h2>
+  <p class="parte__pregunta">¿Qué le hace cada comando a la tabla de datos?</p>
+
+  <p>En la clase, Stata hizo los cálculos. Para entender el código no basta con conocer el nombre de cada comando: hay que saber qué le hace a la tabla. Por eso esta parte sigue tres reglas: primero un <strong>mapa de procesos</strong> (insumo → método → resultado); después cada bloque con su cambio <strong>antes → después</strong>; y al final la <strong>traducción</strong> de cada comando a Python y a Excel.</p>
+
+  <h3>4.1 El mapa de procesos de Modulo2.do</h3>
+  <div class="tabla-desliza">
+  <table class="datos mapa-procesos">
+    <thead><tr><th>N.º</th><th>Proceso</th><th>Insumo</th><th>Método</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Cargar la base</td><td>Enaho01a-2023-500.csv (86 654 personas, 1 414 columnas)</td><td>Leer el CSV como texto, con tildes en latin1</td><td>Tabla en memoria</td></tr>
+      <tr><td>2</td><td>Quedarse con lo necesario</td><td>Tabla completa</td><td>Conservar 5 columnas: frecuencia de pago, ingreso, sexo, estrato y nivel educativo</td><td>Tabla de 5 columnas</td></tr>
+      <tr><td>3</td><td>Convertir texto en números</td><td>Columnas leídas como texto</td><td>Pasar a número, sin separadores de miles</td><td>Columnas numéricas</td></tr>
+      <tr><td>4</td><td>Quitar filas incompletas</td><td>86 654 filas</td><td>Eliminar quien no tiene frecuencia, ingreso, sexo o estrato</td><td>25 244 trabajadores con ingreso</td></tr>
+      <tr><td>5</td><td>Llevar todo a ingreso mensual</td><td>Ingreso en su frecuencia de pago</td><td>Multiplicar por 30, 4, 2 o 1</td><td>Columna <code>ingreso_mensual</code></td></tr>
+      <tr><td>6</td><td>Describir</td><td>Ingreso mensual</td><td>Media, mediana, moda, dispersión e histograma</td><td>Resumen y gráfico</td></tr>
+      <tr><td>7</td><td>Transformar con logaritmo</td><td>Ingreso mensual</td><td>\(\ln(\text{ingreso})\) si es positivo</td><td>Columna <code>log_ingreso_mensual</code></td></tr>
+      <tr><td>8</td><td>Comparar grupos</td><td>Logaritmo y sexo</td><td>Resumen por sexo e histogramas superpuestos</td><td>Tabla y gráfico por sexo</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>4.2 Los bloques, con su cambio</h3>
+  <p><strong>Procesos 1 a 3: cargar, elegir columnas y convertir.</strong></p>
+<pre class="codigo" data-lenguaje="Stata"><span class="com">* PROCESO 1: cargar el CSV de la ENAHO</span>
+<span class="com">*   Antes: archivo en el disco | Después: tabla de 86 654 filas y 1 414 columnas, todas como texto</span>
+<span class="clave">import delimited</span> using <span class="cad">"Enaho01a-2023-500.csv"</span>, clear stringcols(_all) encoding(<span class="cad">"latin1"</span>)
+<span class="clave">rename</span> *, lower            <span class="com">// nombres en minúsculas: P524A1 → p524a1</span>
+
+<span class="com">* PROCESO 2: quedarse con 5 columnas</span>
+<span class="com">*   Antes: 1 414 columnas | Después: 5 columnas, mismas filas</span>
+<span class="clave">keep</span> p523 p524a1 p207 estrato p301a
+
+<span class="com">* PROCESO 3: de texto a número (se repite para cada columna)</span>
+<span class="com">*   Antes: "1,200" (texto) | Después: 1200 (número)</span>
+<span class="clave">destring</span> p524a1, replace ignore(<span class="cad">","</span>)</pre>
+
+  <p><strong>Procesos 4 y 5: quitar filas incompletas y calcular el ingreso mensual.</strong></p>
+<pre class="codigo" data-lenguaje="Stata"><span class="com">* PROCESO 4: eliminar filas sin los datos clave</span>
+<span class="com">*   Antes: 86 654 filas | Después: 25 244 filas (quienes reportan un ingreso)</span>
+<span class="clave">drop if</span> missing(p523, p524a1, p207, estrato)
+
+<span class="com">* PROCESO 5: multiplicador según la frecuencia de pago</span>
+<span class="com">*   Antes: no existe la columna mult | Después: mult = 30, 4, 2 o 1</span>
+<span class="clave">gen</span> byte mult = .
+<span class="clave">replace</span> mult = <span class="num">30</span> if p523 == <span class="num">1</span>    <span class="com">// diario</span>
+<span class="clave">replace</span> mult = <span class="num">4</span>  if p523 == <span class="num">2</span>    <span class="com">// semanal</span>
+<span class="clave">replace</span> mult = <span class="num">2</span>  if p523 == <span class="num">3</span>    <span class="com">// quincenal</span>
+<span class="clave">replace</span> mult = <span class="num">1</span>  if p523 == <span class="num">4</span>    <span class="com">// mensual</span>
+<span class="com">*   Antes: ingreso en su frecuencia | Después: ingreso de un mes</span>
+<span class="clave">gen</span> double ingreso_mensual = p524a1 * mult</pre>
+
+  <div class="antes-despues">
+    <div><b>Antes</b><br>p523 = 1 (diario), p524a1 = 40</div><span>→</span><div><b>Después</b><br>mult = 30, ingreso_mensual = 1 200</div>
+  </div>
+
+  <p><strong>Procesos 6 a 8: describir, transformar y comparar.</strong></p>
+<pre class="codigo" data-lenguaje="Stata"><span class="com">* PROCESO 6: resumen; no cambia la tabla, solo la describe</span>
+<span class="clave">summarize</span> ingreso_mensual, detail     <span class="com">// media, desviación estándar, percentiles (p50 = mediana)</span>
+
+<span class="com">* PROCESO 7: logaritmo, solo si el ingreso es positivo</span>
+<span class="com">*   Antes: 1 200 | Después: ln(1 200) ≈ 7,09. Si el ingreso fuera 0, quedaría vacío (.)</span>
+<span class="clave">gen</span> log_ingreso_mensual = .
+<span class="clave">replace</span> log_ingreso_mensual = ln(ingreso_mensual) if ingreso_mensual > <span class="num">0</span>
+
+<span class="com">* PROCESO 8: comparar por sexo; tampoco cambia la tabla</span>
+<span class="clave">tabstat</span> log_ingreso_mensual, by(sexo) statistics(mean median sd variance min max) columns(statistics)</pre>
+
+  <h3>4.3 La traducción: Stata, Python y Excel</h3>
+  <div class="tabla-desliza">
+  <table class="datos traduccion">
+    <thead><tr><th>Stata</th><th>Python (pandas)</th><th>En Excel sería…</th><th>Qué le hace a la tabla</th></tr></thead>
+    <tbody>
+      <tr><td><code>import delimited</code></td><td><code>pd.read_csv(..., encoding="latin1")</code></td><td>Abrir el CSV</td><td>Archivo → tabla en memoria</td></tr>
+      <tr><td><code>keep p523 p524a1 …</code></td><td><code>df[["p523", "p524a1", …]]</code></td><td>Ocultar o borrar columnas</td><td>Menos columnas, mismas filas</td></tr>
+      <tr><td><code>destring</code></td><td><code>pd.to_numeric(df["p524a1"])</code></td><td>Texto en columnas o VALOR()</td><td>Texto → número</td></tr>
+      <tr><td><code>drop if missing(…)</code></td><td><code>df.dropna(subset=[…])</code></td><td>Filtrar y borrar celdas vacías</td><td>Menos filas, mismas columnas</td></tr>
+      <tr><td><code>gen</code> / <code>replace … if</code></td><td><code>df["mult"] = df["p523"].map({1: 30, 2: 4, 3: 2, 4: 1})</code></td><td>Columna nueva con =SI() o BUSCARV</td><td>Una columna más</td></tr>
+      <tr><td><code>summarize, detail</code></td><td><code>df["ingreso_mensual"].describe()</code></td><td>PROMEDIO, MEDIANA, DESVEST</td><td>Nada: solo describe</td></tr>
+      <tr><td><code>tabstat …, by(sexo)</code></td><td><code>df.groupby("sexo")["log_ingreso"].agg(["mean", "median", "std"])</code></td><td>Tabla dinámica</td><td>Nada: resume por grupo</td></tr>
+      <tr><td><code>histogram</code></td><td><code>plt.hist(df["ingreso_mensual"], bins=50)</code></td><td>Gráfico de histograma</td><td>Nada: dibuja</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>4.4 La revisión que faltaba: faltantes disfrazados</h3>
+  <p>Antes de calcular, conviene recorrer una lista fija de exploración: tamaño de la tabla, primeras filas, tipos de columna, duplicados, faltantes por columna, estadísticos básicos, frecuencias y valores atípicos. El paso que más se olvida son los <strong>faltantes disfrazados</strong>: números como 999999, −99 o 0 que en realidad significan «no sabe», «no responde» o «no aplica». En la ENAHO, 999999 en el ingreso es uno de ellos. Un <code>summarize, detail</code> lo delata: el máximo sale S/ 29 999 970.</p>
+<pre class="codigo" data-lenguaje="Stata"><span class="com">* PROCESO 4b (propuesto): excluir el código de «no sabe / no responde»</span>
+<span class="com">*   Antes: 25 244 filas, media S/ 27 997 | Después: 24 880 filas, media S/ 1 598</span>
+<span class="clave">drop if</span> p524a1 == <span class="num">999999</span></pre>
+<pre class="codigo" data-lenguaje="Python"><span class="com"># Lo mismo en pandas: conservar solo las filas cuyo ingreso no es el código</span>
+<span class="com">#   Antes: 25 244 filas | Después: 24 880 filas</span>
+enaho_ingresos = enaho_ingresos[enaho_ingresos[<span class="cad">"p524a1"</span>] != <span class="num">999999</span>]</pre>
+
+  <aside class="caja caja--reto" data-reto="e9">
+    <p class="caja__titulo">Reto 4.1</p>
+    <p>¿Qué comando de la lista de exploración habría delatado el código 999999 antes de calcular la media?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-correcta><code>summarize ingreso_mensual, detail</code>: muestra el máximo y los percentiles</button>
+      <button class="opcion" type="button" data-pista="describe muestra el nombre y el tipo de cada columna, no sus valores.">
+<code>describe</code>: muestra los nombres de las columnas</button>
+      <button class="opcion" type="button" data-pista="keep elige columnas; no revisa sus valores.">
+<code>keep</code>: elige las columnas</button>
+    </div>
+    <p class="respuesta">Correcto. Un máximo de S/ 29 999 970 al mes es imposible para un trabajador encuestado. Cuando un máximo, un mínimo o un valor muy repetido parece raro, busca en el diccionario de la encuesta si es un código. Regla práctica: <strong>no elimines nada sin anotar cuántas filas afecta y por qué</strong>; aquí, 364 filas (1,5 %).</p>
+  </aside>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 4 · El código">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>Antes del código, el <strong>mapa de procesos</strong>: insumo → método → resultado.</li>
+      <li>Para cada comando, pregunta qué le hace a la tabla: ¿quita filas, quita columnas, crea una columna o solo describe?</li>
+      <li><code>keep</code> ↔ <code>df[[…]]</code> ↔ ocultar columnas; <code>gen</code> ↔ <code>df["x"] = …</code> ↔ columna con fórmula; <code>tabstat, by()</code> ↔ <code>groupby</code> ↔ tabla dinámica.</li>
+      <li>Busca <strong>faltantes disfrazados</strong> (999999, −99, 0) con el máximo, el mínimo y los valores más repetidos.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>Clase 01, diapositivas 50–53 (aplicación con la ENAHO 2023) y el archivo <code>Modulo2.do</code>. Dos observaciones, con respeto: el comentario inicial del archivo dice «p207: 1 Mujer, 2 Hombre», pero la etiqueta que define después, y la propia ENAHO, usan 1 = Hombre y 2 = Mujer. Y el ejercicio no usa el factor de expansión de la ENAHO (<code>fac500a</code>): sus resultados describen la muestra, no la población del país.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 7: Parte 5. De comparar promedios a la regresión
+     Insumo:    el logaritmo del ingreso por sexo en la ENAHO 2023
+     Resultado: una diferencia con su intervalo, su lectura asociativa y el avance de la regresión
+     ============================================================ -->
+<section class="parte" id="p5">
+<div class="contenedor">
+  <p class="parte__num">Parte 5</p>
+  <h2>De comparar promedios a la regresión</h2>
+  <p class="parte__pregunta">¿Cuánto más ganan los hombres, y qué podemos concluir de eso?</p>
+
+  <p>Juntemos todo con el ejercicio de la clase, ya sin el código 999999:</p>
+  <div class="tabla-desliza">
+  <table class="datos">
+    <thead><tr><th>Grupo</th><th class="num">Personas</th><th class="num">Mediana del ingreso</th><th class="num">Media del logaritmo</th><th class="num">Desviación estándar del logaritmo</th></tr></thead>
+    <tbody>
+      <tr><td>Hombres</td><td class="num">14 581</td><td class="num">S/ 1 320</td><td class="num">7,122</td><td class="num">0,859</td></tr>
+      <tr><td>Mujeres</td><td class="num">10 299</td><td class="num">S/ 1 080</td><td class="num">6,922</td><td class="num">0,947</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="nota-pie">ENAHO 2023, módulo 500, ingreso mensual de la ocupación principal. Sin factor de expansión: describe la muestra.</p>
+  <p>La diferencia de medias del logaritmo es \(7{,}122 - 6{,}922 = 0{,}200\). En la escala del logaritmo, eso significa que el ingreso típico de los hombres es cerca de \(e^{0{,}2} - 1 \approx 22\,\%\) mayor. Su error estándar es 0,0117, así que el intervalo al 95 % va de 0,177 a 0,223, y \(T \approx 17\). La diferencia no es un accidente de la muestra.</p>
+
+  <aside class="caja caja--reto" data-reto="e10">
+    <p class="caja__titulo">Reto 5.1</p>
+    <p>¿Qué podemos concluir de esta diferencia de 0,200?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Una diferencia entre grupos no separa las causas: los grupos difieren en muchas cosas a la vez.">Que ser mujer causa ganar 18 % menos</button>
+      <button class="opcion" type="button" data-correcta>Que en la muestra los hombres ganan más, con poca incertidumbre; sin un diseño causal, no sabemos por qué</button>
+      <button class="opcion" type="button" data-pista="El intervalo de 0,177 a 0,223 no incluye el cero: la diferencia es clara en la muestra.">Nada: la diferencia podría ser cero</button>
+    </div>
+    <p class="respuesta">Correcto. Es una <strong>asociación</strong> bien medida. Hombres y mujeres pueden diferir en horas trabajadas, ocupación, sector, experiencia o educación, y también puede haber discriminación. La comparación simple mezcla todo eso. Separarlo exige otras variables y, sobre todo, un diseño de identificación: la diapositiva 49 lo dice así.</p>
+  </aside>
+
+  <h3>El avance de la regresión</h3>
+  <p>La clase 3 presentará la <strong>regresión lineal</strong>: \(Y_i = \beta_0 + \beta_1 X_i + u_i\). Un dato que conecta esta lección con la siguiente: si \(X_i\) vale 1 para las mujeres y 0 para los hombres, la regresión del logaritmo del ingreso da \(\hat\beta_0 = 7{,}122\) (el promedio de los hombres) y \(\hat\beta_1 = -0{,}200\) (la diferencia). <strong>Una regresión con una variable de 0 y 1 es una comparación de promedios.</strong> En la <a href="leccion-02.html#p4">lección 2 de machine learning</a> verás la misma recta, esta vez con los años de educación.</p>
+  <p>El término \(u_i\) recoge todo lo demás que afecta el ingreso. Para leer \(\beta_1\) como un efecto causal, \(u_i\) no debe estar relacionado con \(X_i\). Esa es la pregunta de la diapositiva 54, y la de todo el curso.</p>
+
+  <p class="util">la regresión generaliza la comparación de promedios: permite comparar grupos «con lo demás constante», como en la ecuación de Mincer de Yamada (2007). Pero «con lo demás constante» solo vale para lo que pusiste en el modelo.</p>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 5 · Comparar y regresión">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>Una diferencia de logaritmos se lee, aproximadamente, como una diferencia porcentual: \(e^{0{,}2} - 1 \approx 22\,\%\).</li>
+      <li>Reporta la estimación con su error estándar y su intervalo: 0,200 (IC 95 %: 0,177 a 0,223).</li>
+      <li>Una diferencia precisa sigue siendo una <strong>asociación</strong> si no hay un diseño causal.</li>
+      <li>Regresión con una variable 0/1: \(\hat\beta_0\) es el promedio del grupo 0 y \(\hat\beta_1\) la diferencia entre grupos.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \bar y_H - \bar y_M \pm 1{,}96\,\sqrt{\frac{s_H^2}{n_H} + \frac{s_M^2}{n_M}} \;=\; 0{,}200 \pm 1{,}96 \times 0{,}0117 \]</div>
+    <div class="formula-grande">\[ \ln(\text{ingreso}_i) = \beta_0 + \beta_1\,\text{mujer}_i + u_i \quad\Rightarrow\quad \hat\beta_0 = 7{,}122,\ \ \hat\beta_1 = -0{,}200 \]</div>
+    <p class="lee">la diferencia de promedios más y menos 1,96 errores estándar da el intervalo. En la regresión, el coeficiente de «mujer» es esa misma diferencia, con signo negativo.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(\bar y_H,\ \bar y_M\)</td><td>«ye barra hache», «ye barra eme»</td><td>Promedio del logaritmo del ingreso de hombres y de mujeres.</td></tr>
+        <tr><td>\(\ln\)</td><td>«logaritmo natural»</td><td>El logaritmo en base \(e \approx 2{,}718\); en Stata, <code>ln()</code>.</td></tr>
+        <tr><td>\(\beta_0,\ \beta_1\)</td><td>«beta cero», «beta uno»</td><td>Constante y pendiente de la regresión. \(\hat{\ }\) marca su estimación.</td></tr>
+        <tr><td>\(u_i\)</td><td>«u sub i»</td><td>El término de error: todo lo que afecta el ingreso y no está en el modelo.</td></tr>
+        <tr><td>\(\text{mujer}_i\)</td><td>«mujer sub i»</td><td>Variable que vale 1 si la persona \(i\) es mujer y 0 si es hombre (una <em>dummy</em>).</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la clase</p>
+    <p>Clase 01, diapositivas 52–55 (descripción por grupos, regresión y preguntas de cierre) y 69 (ecuación de Mincer). Las cifras por sexo de esta parte son nuestras, calculadas con la ENAHO sin el código 999999; las del archivo de la clase deben leerse en su propia salida.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 8: Cierre
+     Insumo:    las cinco partes
+     Resultado: el mapa del razonamiento econométrico y los puentes con machine learning
+     ============================================================ -->
+<section class="parte" id="cierre">
+<div class="contenedor">
+  <p class="parte__num">Cierre</p>
+  <h2>Cómo encaja todo</h2>
+  <p>Una investigación econométrica recorre siempre el mismo camino (diapositiva 16):</p>
+  <ol class="flujo lab--ancho">
+    <li class="flujo__paso"><b>1 · Pregunta</b>¿Describir, predecir o estimar un efecto?<small>Parte 0: el contrafactual y el grupo de comparación.</small></li>
+    <li class="flujo__paso"><b>2 · Datos y muestra</b>Unidad de observación, población y diseño muestral.<small>Parte 1: la conveniencia sesga; el diseño importa más que el tamaño.</small></li>
+    <li class="flujo__paso"><b>3 · Descripción</b>Centro y dispersión, sin códigos disfrazados.<small>Partes 1 y 4: media, mediana y el 999999.</small></li>
+    <li class="flujo__paso"><b>4 · Incertidumbre</b>Error estándar, intervalo y prueba.<small>Partes 2 y 3.</small></li>
+    <li class="flujo__paso"><b>5 · Interpretación</b>¿Asociación o efecto? ¿Para qué población?<small>Parte 5: una diferencia precisa no es una causa.</small></li>
+  </ol>
+
+  <h3>Econometría y machine learning: los mismos objetos con otros nombres</h3>
+  <div class="tabla-desliza">
+  <table class="datos">
+    <thead><tr><th>En esta lección</th><th>En machine learning</th><th>Dónde verlo</th></tr></thead>
+    <tbody>
+      <tr><td>Estimar un efecto frente a predecir</td><td>Las dos culturas de Breiman</td><td><a href="leccion-01.html#p5">Lección 1, parte 5</a></td></tr>
+      <tr><td>La media se deja arrastrar por los extremos</td><td>La pérdida cuadrática y su mejor número, la media</td><td><a href="leccion-01.html#p1">Lección 1, parte 1</a></td></tr>
+      <tr><td>Error estándar \(\sigma/\sqrt{n}\) y teorema del límite central</td><td>El margen de error de la exactitud en los datos de prueba</td><td><a href="leccion-01.html#p4">Lección 1, parte 4</a></td></tr>
+      <tr><td>Valor-p: \(P(\text{datos} \mid H_0)\), no \(P(H_0 \mid \text{datos})\)</td><td>Bayes y la falacia de la tasa base</td><td><a href="leccion-01.html#p3">Lección 1, parte 3</a></td></tr>
+      <tr><td>Error tipo I, error tipo II y potencia</td><td>Falso positivo, falso negativo y <em>recall</em></td><td><a href="leccion-02.html#p3">Lección 2, parte 3</a></td></tr>
+      <tr><td>Faltantes disfrazados (999999)</td><td>Limpieza de datos antes del modelo</td><td><a href="leccion-02.html#p2">Lección 2, parte 2</a></td></tr>
+      <tr><td>Regresión de \(\ln(\text{ingreso})\) con una variable 0/1</td><td>La recta que minimiza el error cuadrático</td><td><a href="leccion-02.html#p4">Lección 2, parte 4</a></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>Lo que viene.</strong> Según el sílabo, la clase 2 trata la estadística descriptiva, la exploración y la preparación de datos; la clase 3, la regresión lineal simple y múltiple, su estimación e interpretación; y la clase 4, una aplicación práctica con una base de datos peruana.</p>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 9: Ficha de repaso
+     Insumo:    todas las cajas «Recuerda» de la página
+     Resultado: una hoja de repaso imprimible
+     ============================================================ -->
+<section class="parte" id="ficha">
+<div class="contenedor ancho">
+  <p class="parte__num">Ficha de repaso</p>
+  <h2>Todo lo que debes recordar, en una sola vista</h2>
+  <p class="suave">Esta ficha copia todas las cajas «Recuerda» de la lección.</p>
+  <p><button class="boton" type="button" id="imprimir-ficha">Imprimir la ficha</button>
+     <button class="boton boton--hueco" type="button" id="borrar-avance" title="Borra los retos resueltos guardados en este navegador">Borrar mis respuestas</button></p>
+  <div class="ficha" id="ficha-contenido"></div>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 10: Glosario de símbolos y lecturas
+     Insumo:    la notación de la clase 1
+     Resultado: una tabla para consultar cualquier símbolo
+     ============================================================ -->
+<section class="parte" id="simbolos">
+<div class="contenedor">
+  <p class="parte__num">Consulta</p>
+  <h2>Glosario de símbolos</h2>
+  <div class="tabla-desliza"><table class="simbolos">
+    <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+    <tbody>
+      <tr><td>\(\mu,\ \sigma,\ \sigma^2\)</td><td>«mu», «sigma», «sigma cuadrado»</td><td>Media, desviación estándar y varianza de la población.</td></tr>
+      <tr><td>\(\bar x,\ s,\ s^2\)</td><td>«equis barra», «ese», «ese cuadrado»</td><td>Media, desviación estándar y varianza de la muestra.</td></tr>
+      <tr><td>\(\bar X\)</td><td>«equis barra mayúscula»</td><td>El estimador «promedio de la muestra», antes de observarla.</td></tr>
+      <tr><td>\(n,\ N\)</td><td>«ene», «ene mayúscula»</td><td>Tamaño de la muestra y de la población.</td></tr>
+      <tr><td>\(E[X],\ \operatorname{Var}(X)\)</td><td>«esperanza», «varianza»</td><td>Promedio ponderado y dispersión de una distribución.</td></tr>
+      <tr><td>\(X \sim N(\mu, \sigma^2)\)</td><td>«equis se distribuye normal»</td><td>La campana con centro \(\mu\) y varianza \(\sigma^2\).</td></tr>
+      <tr><td>\(Z,\ \Phi\)</td><td>«zeta», «fi»</td><td>Valor estandarizado y probabilidad acumulada de la normal estándar.</td></tr>
+      <tr><td>\(\text{EE}\)</td><td>«error estándar»</td><td>La desviación estándar de un estimador entre muestras.</td></tr>
+      <tr><td>\(\text{IC}_{95\%}\)</td><td>«intervalo de confianza al 95 %»</td><td>Estimación ± 1,96 errores estándar.</td></tr>
+      <tr><td>\(H_0,\ H_1\)</td><td>«hache cero», «hache uno»</td><td>Hipótesis nula y alternativa.</td></tr>
+      <tr><td>\(T,\ t_{n-1}\)</td><td>«te»</td><td>Estadístico de la prueba y su distribución con \(n-1\) grados de libertad.</td></tr>
+      <tr><td>\(\alpha,\ \beta,\ 1-\beta\)</td><td>«alfa», «beta», «potencia»</td><td>Probabilidades de error tipo I y tipo II, y potencia de la prueba.</td></tr>
+      <tr><td>valor-p</td><td>«valor pe»</td><td>\(P(\text{resultado tan extremo o más} \mid H_0)\).</td></tr>
+      <tr><td>i.i.d.</td><td>«i, i, de»</td><td>Independientes e idénticamente distribuidas.</td></tr>
+      <tr><td>\(\beta_0,\ \beta_1,\ u_i\)</td><td>«beta cero», «beta uno», «u sub i»</td><td>Coeficientes y término de error de la regresión.</td></tr>
+      <tr><td>\(\ln\)</td><td>«logaritmo natural»</td><td>Logaritmo en base \(e\); comprime la cola de los ingresos.</td></tr>
+      <tr><td>\(\widehat{\text{DiD}}\)</td><td>«diferencia en diferencias estimada»</td><td>El cambio en los tratados menos el cambio en el control.</td></tr>
+    </tbody>
+  </table></div>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 11: Créditos y autorías
+     Insumo:    todas las fuentes usadas en la lección
+     Resultado: quién hizo cada material y qué se tomó de cada uno
+     ============================================================ -->
+<section class="parte" id="creditos">
+<div class="contenedor">
+  <p class="parte__num">Créditos</p>
+  <h2>Créditos y autorías</h2>
+  <p>Esta página es un material de estudio. No reemplaza a la clase ni a sus lecturas: las explica con otras palabras, con ejemplos y con laboratorios. No reproduce las diapositivas; cita sus páginas para que las consultes.</p>
+
+  <h3>Material del curso: la base de esta lección</h3>
+  <ul class="lecturas">
+    <li><strong>Alfonso Rodríguez</strong>, profesor del «Taller de Introducción a la Econometría Aplicada», Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública, QLAB, Pontificia Universidad Católica del Perú (PUCP), 2026.</li>
+    <li>Rodríguez, A. (2026). <em>Fundamentos de econometría y repaso estadístico</em> (diapositivas de la Clase 1, Taller de fundamentos de inferencia causal). QLAB–PUCP. La secuencia de temas, los ejemplos de las seis edades y de las dos monedas, y la lectura de los tres estudios siguen estas diapositivas.</li>
+    <li>Rodríguez, A. (2025). <em>Módulo 1: Econometría aplicada</em> y <em>Módulo 2: Repaso de conceptos estadísticos básicos</em>. Taller de Econometría, QLAB–PUCP. Citados en las diapositivas.</li>
+    <li>Rodríguez, A. <code>Modulo2.do</code>: archivo de comandos de Stata de la Clase 1, «Introducción a Stata para análisis de datos».</li>
+    <li>QLAB–PUCP. Sílabo del «Taller de Introducción a la Econometría Aplicada» (2026).</li>
+  </ul>
+
+  <h3>Estudios de la clase</h3>
+  <ul class="lecturas">
+    <li>Amaya, E., Cozzubo, A., Cueto, J. y Hernández, W. (2021). <em>¿Es efectivo el uso de la estrategia de hotspots en el Perú? Los resultados de la Estrategia Multisectorial Barrio Seguro en la lucha contra el crimen: una mirada a la criminalidad y percepción de inseguridad</em>. Informe final.</li>
+    <li>Yamada, G. (2007). <em>Retornos a la educación superior en el mercado laboral: ¿vale la pena el esfuerzo?</em> Universidad del Pacífico y CIES.</li>
+    <li>Bernal, N., Costa, J. y Ritter, P. (s. f.). <em>El efecto del Seguro Integral de Salud en la salud infantil: evidencia de un diseño de regresión discontinua</em>. Informe CIES.</li>
+  </ul>
+
+  <h3>Datos</h3>
+  <p>Instituto Nacional de Estadística e Informática (INEI). Encuesta Nacional de Hogares (ENAHO) 2023, módulo 500 (empleo e ingresos), archivo <code>Enaho01a-2023-500.csv</code> de los materiales de la clase. Los cálculos de esta página son propios, sin factor de expansión: describen la muestra, no la población. Los laboratorios 3 a 6 usan una submuestra fija de 6 000 trabajadores tratada como población.</p>
+
+  <h3>Ejemplos propios de esta página</h3>
+  <p>Son de Diego Sime y Claude Code: el laboratorio de diferencias en diferencias (cifras inventadas), la universidad simulada de 100 estudiantes, las simulaciones de muestras, intervalos y pruebas, la línea propuesta para excluir el código 999999 y los retos.</p>
+
+  <h3>Otras obras citadas</h3>
+  <ul class="lecturas">
+    <li>Callaway, B. y Sant'Anna, P. H. C. (2021). Difference-in-Differences with multiple time periods. <em>Journal of Econometrics</em>, 225(2), 200–230. Citado por Amaya y otros (2021).</li>
+    <li>Holland, P. W. (1986). Statistics and Causal Inference. <em>Journal of the American Statistical Association</em>, 81(396), 945–960.</li>
+    <li>Hume, D. (1748). <em>Investigación sobre el entendimiento humano</em>, sección 7.</li>
+    <li>Lewis, D. (1973). Causation. <em>The Journal of Philosophy</em>, 70(17), 556–567.</li>
+    <li>Mincer, J. (1974). <em>Schooling, Experience, and Earnings</em>. NBER.</li>
+  </ul>
+
+  <h3>Herramientas</h3>
+  <p>Fórmulas: <a href="https://katex.org/">KaTeX</a> (licencia MIT). Tipografías: Newsreader y Schibsted Grotesk (SIL Open Font License), vía Google Fonts. Gráficos: JavaScript propio, sin otras librerías.</p>
+
+  <h3>Elaboración y licencia</h3>
+  <p>Texto, diseño, laboratorios y código: Diego Sime con Claude Code (Anthropic), noviembre de 2026. La licencia MIT del repositorio cubre solo el código y el texto propios. Las diapositivas, el archivo de comandos, los estudios y las demás obras citadas pertenecen a sus autores y no se reproducen aquí.</p>
+</div>
+</section>
+
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <p>Aprendizaje de Machine Learning y econometría · Material de estudio basado en las clases del <strong>prof. Alfonso Rodríguez</strong> (Taller de Introducción a la Econometría Aplicada, QLAB–PUCP, 2026). Texto en lenguaje simple, según el estándar ASD-STE100 adaptado al español.</p>
+    <p>Elaborado por Diego Sime con Claude Code · <a href="#creditos">Créditos y autorías</a> · <a href="index.html">Volver al curso</a> · <a href="https://github.com/diegosimemirror/aprendizaje_ML">Código en GitHub</a></p>
+  </div>
+</footer>
+
+</body>
+</html>

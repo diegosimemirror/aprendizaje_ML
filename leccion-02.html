@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Del cuaderno al modelo · Lección 2</title>
+<meta name="description" content="Lección interactiva de la práctica dirigida 1: el descenso de gradiente en Python, la limpieza de datos y los primeros modelos de clasificación y regresión, cada línea de código con su fórmula y su equivalente en Excel.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 3 Q8 16 15 3' fill='none' stroke='%234338ca' stroke-width='2.2'/%3E%3Ccircle cx='11' cy='8.6' r='2' fill='%23d97706'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<link rel="stylesheet" href="recursos/estilos.css">
+<script>try{var t=localStorage.getItem('aprendizaje-ml-tema');if(t)document.documentElement.setAttribute('data-tema',t);}catch(e){}</script>
+<!-- Herramientas compartidas, datos de la práctica y laboratorios de esta lección. -->
+<script defer src="recursos/comun.js"></script>
+<script defer src="recursos/datos-leccion-02.js"></script>
+<script defer src="recursos/leccion-02.js"></script>
+</head>
+<body data-leccion="leccion-02">
+
+<!-- ============================================================
+     PROCESO 1: Barra superior
+     Insumo:    partes de la lección
+     Resultado: índice fijo, contador de retos, tema y avance de lectura
+     ============================================================ -->
+<header class="barra">
+  <div class="barra__fila">
+    <a class="barra__curso" href="index.html">Aprendizaje de ML</a>
+    <nav class="barra__partes" aria-label="Partes de la lección">
+      <a href="#p0">Inicio</a>
+      <a href="#p1">1 · Motor</a>
+      <a href="#p2">2 · Limpiar</a>
+      <a href="#p3">3 · Clasificar</a>
+      <a href="#p4">4 · Regresión</a>
+      <a href="#cierre">Cierre</a>
+      <a href="#ficha">Ficha</a>
+      <a href="#creditos">Créditos</a>
+    </nav>
+    <span class="barra__retos" id="contador-retos" title="Retos resueltos">0 retos</span>
+    <button class="barra__tema" id="boton-tema" type="button" aria-label="Cambiar entre modo claro y oscuro">◐</button>
+  </div>
+  <div class="barra__avance" id="avance"></div>
+</header>
+
+<main>
+
+<!-- ============================================================
+     PROCESO 2: Portada y parte 0
+     Insumo:    el modelo del cuaderno 3 que acierta el 85 % y no detecta a nadie
+     Resultado: el problema de la lección y el mapa del flujo de un proyecto
+     ============================================================ -->
+<section class="contenedor" id="p0">
+  <div class="portada">
+    <p class="portada__etiqueta">Lección 2 · Machine Learning para las Ciencias Sociales</p>
+    <h1>Del cuaderno al modelo</h1>
+    <p class="portada__sub">En la lección 1 viste las ideas. En la práctica dirigida las escribiste en Python. Esta lección une las dos: cada línea de código, con su fórmula de la lección 1 y su equivalente en Excel.</p>
+    <div class="portada__datos">
+      <span>Práctica dirigida 1 (PD1), 25 de noviembre de 2026</span>
+      <span>Prof. Pavel Coronado (PUCP · QLAB)</span>
+      <span>Tres cuadernos de Python</span>
+      <span>Lectura activa: 60 a 90 minutos</span>
+    </div>
+  </div>
+
+  <aside class="caja caja--autoria" aria-labelledby="titulo-autoria">
+    <p class="caja__titulo" id="titulo-autoria">Autoría y fuentes</p>
+    <p>Esta lección se basa en los materiales de la <strong>práctica dirigida 1</strong> del curso «Introducción a Machine Learning para Ciencias Sociales» del <strong>prof. Pavel Coronado Castellanos</strong> (Diplomatura de la Facultad de Ciencias Sociales, PUCP, 2026; asistente del curso: Anderson Águila): los cuadernos <em>1_practica_optimizacion_regularizacion</em>, <em>2_preprocesamiento_desercion</em> y <em>3_ejemplos_clasificacion_regresion</em>, y sus bases de datos de práctica. Los datos <em>Advertising</em> del cuaderno 3 son de James, Witten, Hastie y Tibshirani (<em>An Introduction to Statistical Learning</em>).</p>
+    <p>Texto, laboratorios y código de esta página: <strong>Diego Sime con Claude Code</strong>, como material de estudio. Los errores son nuestros. <a href="#creditos">Ver todos los créditos</a>.</p>
+  </aside>
+
+  <h2 style="margin-top:1.2em">Un modelo que acierta el 85 %</h2>
+  <p>Una universidad quiere saber qué estudiantes abandonarán sus estudios, para ofrecerles tutoría o una beca antes de que se vayan. El cuaderno 3 entrena un modelo con 18 354 estudiantes y lo prueba con 3 671 que el modelo no vio. Resultado: <strong>acierta en el 84,88 % de los casos</strong>.</p>
+
+  <aside class="caja caja--reto" data-reto="0.1">
+    <p class="caja__titulo">Reto 0.1 · Antes de empezar</p>
+    <p>¿Es un buen modelo para la universidad?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Pregúntate a cuántos desertores encontró. El 85 % incluye también a los que no desertan.">Sí: 85 % de aciertos es alto</button>
+      <button class="opcion" type="button" data-correcta>No: no encuentra a ningún desertor</button>
+      <button class="opcion" type="button" data-pista="Basta con mirar a quiénes marcó el modelo como desertores.">No se puede saber sin más datos</button>
+    </div>
+    <p class="respuesta">Correcto. El modelo dice «no deserta» a los 3 671 estudiantes. Acierta con los 3 116 que se quedan (84,88 %) y falla con los 555 que se van. <strong>No detecta a ninguno.</strong> Acierta mucho porque la mayoría no deserta, no porque haya aprendido algo. El mismo truco aparece en tu proyecto del SIS: si solo el 0,94 % se hospitaliza, un modelo que dice «nadie» acierta el 99,06 %. La parte 3 explica cómo medir mejor.</p>
+  </aside>
+
+  <h3>El flujo de un proyecto de machine learning</h3>
+  <p>El cuaderno 3 termina con un mapa del trabajo. Cada paso usa una idea de la lección 1:</p>
+  <ol class="flujo lab--ancho">
+    <li class="flujo__paso"><b>1 · Revisar y limpiar</b>Explorar la base y corregir errores.<small>Parte 2 de esta lección. Sin esto, el modelo aprende los errores.</small></li>
+    <li class="flujo__paso"><b>2 · X e y · dividir</b>Elegir qué predice y qué se predice; separar datos de entrenamiento y de prueba.<small>Lección 1, parte 4: la prueba imita los casos nuevos.</small></li>
+    <li class="flujo__paso"><b>3 · Ajustar (<em>fit</em>)</b>Buscar los parámetros con la menor pérdida.<small>Lección 1, partes 1 y 2: pérdida y descenso de gradiente. Parte 1 de esta lección.</small></li>
+    <li class="flujo__paso"><b>4 · Predecir</b>Aplicar el modelo a casos que no vio.<small>Lección 1, parte 3: probabilidad condicional y FEC.</small></li>
+    <li class="flujo__paso"><b>5 · Evaluar</b>Medir el error con la métrica adecuada.<small>Partes 3 y 4 de esta lección.</small></li>
+  </ol>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 0 · Inicio">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>Un porcentaje alto de aciertos puede esconder un modelo inútil: compáralo siempre con el que dice lo mismo a todos.</li>
+      <li>Un proyecto de ML tiene cinco pasos: limpiar, dividir, ajustar, predecir y evaluar.</li>
+    </ul>
+  </aside>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 3: Parte 1. El motor: descenso de gradiente en código (cuaderno 1)
+     Insumo:    f(x, y) = x² + 2y² − 2xy + 2x − 8y + 10, inicio (−5; 10)
+     Resultado: código ↔ fórmula ↔ Excel, laboratorio 3D con α y retos
+     ============================================================ -->
+<section class="parte" id="p1">
+<div class="contenedor">
+  <p class="parte__num">Parte 1 · Cuaderno 1</p>
+  <h2>El motor: el descenso de gradiente en código</h2>
+  <p class="parte__pregunta">¿Cómo se ve en Python lo que en la lección 1 era una fórmula?</p>
+
+  <p>El cuaderno 1 baja por este terreno, empezando en el punto \((-5;\,10)\):</p>
+  <div class="formula-grande">\[ f(x, y) = x^2 + 2y^2 - 2xy + 2x - 8y + 10 \]</div>
+  <p>El cuaderno ya sabe dónde está el fondo: en \((2;\,3)\), con \(f = 0\). ¿Cómo lo sabe? En el fondo el terreno es plano, así que las dos derivadas parciales valen cero (lección 1, sección 2.1). Eso da dos ecuaciones con dos incógnitas:</p>
+  <div class="formula-grande">\[ \frac{\partial f}{\partial x} = 2x - 2y + 2 = 0 \qquad \frac{\partial f}{\partial y} = 4y - 2x - 8 = 0 \quad\Longrightarrow\quad (x;\,y) = (2;\,3) \]</div>
+  <p><strong>Entonces, ¿para qué el descenso de gradiente?</strong> Por dos razones. Primero, en un modelo real con miles de parámetros no hay una fórmula que resolver: solo queda bajar paso a paso. Segundo, el cuaderno elige a propósito un terreno con respuesta conocida, para <strong>comprobar que el algoritmo funciona</strong> antes de usarlo donde no sabemos la respuesta. Es una buena costumbre de cualquier programador.</p>
+
+  <h3>El código, proceso por proceso</h3>
+  <p>El cuaderno tiene cuatro procesos. Cada uno toma el resultado del anterior:</p>
+  <div class="tabla-desliza"><table class="datos mapa-procesos">
+    <thead><tr><th>N.º</th><th>Proceso</th><th>Insumo</th><th>Método</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Definir el terreno</td><td>La fórmula de \(f\)</td><td>Función <code>f(punto)</code></td><td>Una función que da la altura de cualquier punto</td></tr>
+      <tr><td>2</td><td>Definir el gradiente</td><td>Las dos derivadas parciales</td><td>Función <code>grad_f(punto)</code></td><td>Una función que da la flecha cuesta arriba</td></tr>
+      <tr><td>3</td><td>Bajar el terreno</td><td>Punto inicial, α y número de pasos</td><td>Función <code>descenso_gradiente</code></td><td>La <code>trayectoria</code>: lista de 51 puntos</td></tr>
+      <tr><td>4</td><td>Comparar α</td><td>La trayectoria con α = 0,1; 0,3 y 0,01</td><td>Gráficos de curvas de nivel</td><td>Cuál α llega al fondo y en cuántos pasos</td></tr>
+    </tbody>
+  </table></div>
+
+  <pre class="codigo" data-lenguaje="Python"><span class="com"># PROCESO 3: Bajar el terreno (cuaderno 1, celda 5)
+# Insumo:    punto_inicial = (-5, 10), alpha = 0.1, n_iteraciones = 50
+# Resultado: trayectoria, una tabla de 51 filas (una por posición)</span>
+def descenso_gradiente(punto_inicial, alpha, n_iteraciones):
+    trayectoria = [punto_inicial.copy()]   <span class="com"># Antes: lista vacía | Después: lista con el punto de partida</span>
+    punto_actual = punto_inicial.copy()
+    for i in range(n_iteraciones):         <span class="com"># repite 50 veces lo que sigue (k = 0, 1, …, 49)</span>
+        gradiente = grad_f(punto_actual)   <span class="com"># la flecha cuesta arriba en el punto actual</span>
+        punto_actual = punto_actual - alpha * gradiente   <span class="com"># Antes: posición k | Después: posición k + 1</span>
+        trayectoria.append(punto_actual.copy())           <span class="com"># la lista crece en una fila</span>
+    return np.array(trayectoria)           <span class="com"># convierte la lista en una tabla de 51 × 2</span></pre>
+
+  <div class="tabla-desliza"><table class="datos traduccion">
+    <thead><tr><th>Línea de Python</th><th>Fórmula de la lección 1</th><th>En Excel sería…</th></tr></thead>
+    <tbody>
+      <tr><td><code>grad_f(punto_actual)</code></td><td>\(\nabla f(x_k)\)</td><td>Dos columnas con las fórmulas de las derivadas, que leen la fila anterior</td></tr>
+      <tr><td><code>punto_actual - alpha * gradiente</code></td><td>\(x_{k+1} = x_k - \alpha\,\nabla f(x_k)\)</td><td>La celda de la fila siguiente: <code>=B2 - $H$1 * D2</code></td></tr>
+      <tr><td><code>for i in range(50)</code></td><td>Repetir para \(k = 0, 1, \dots, 49\)</td><td>Arrastrar la fórmula 50 filas hacia abajo</td></tr>
+      <tr><td><code>trayectoria.append(…)</code></td><td>La sucesión \(x_0, x_1, \dots, x_{50}\)</td><td>Las 51 filas que quedan en la hoja</td></tr>
+      <tr><td><code>alpha</code></td><td>\(\gamma\) (en la lección 1)</td><td>Una celda fija, <code>$H$1</code>, que puedes cambiar</td></tr>
+    </tbody>
+  </table></div>
+  <p class="nota-pie">Ojo con la notación: el cuaderno llama α (<em>alpha</em>) a lo que la lección 1 llamó γ. Es lo mismo: el tamaño del paso, en inglés <em>learning rate</em>.</p>
+
+  <figure class="lab lab--ancho" id="demo-gd">
+    <p class="lab__titulo">Laboratorio 1 · El terreno del cuaderno 1</p>
+    <p class="lab__guia">Elige α y pulsa «50 pasos». Arriba, el terreno en 3D (arrástralo para girarlo); abajo, el mapa desde arriba y la tabla con las mismas filas que imprime el cuaderno (iteraciones 10, 20, …, 50).</p>
+    <canvas id="gd-3d" aria-label="Terreno en 3D de la función del cuaderno 1, con el camino del descenso"></canvas>
+    <div class="lab__controles" role="group" aria-label="Tamaño del paso">
+      <span class="suave">α =</span>
+      <button class="boton boton--hueco" type="button" data-alfa="0.01" aria-pressed="false">0,01</button>
+      <button class="boton boton--hueco" type="button" data-alfa="0.1" aria-pressed="true">0,1</button>
+      <button class="boton boton--hueco" type="button" data-alfa="0.3" aria-pressed="false">0,3</button>
+      <button class="boton boton--hueco" type="button" data-alfa="0.38" aria-pressed="false">0,38</button>
+      <button class="boton boton--hueco" type="button" data-alfa="0.4" aria-pressed="false">0,4</button>
+      <button class="boton" type="button" id="gd-correr">50 pasos</button>
+    </div>
+    <div class="lab__dos lab__dos--mapa" style="margin-top:12px">
+      <canvas id="gd-mapa" aria-label="Mapa de curvas de nivel con el camino"></canvas>
+      <div class="tabla-desliza"><table class="datos" id="gd-tabla"><thead><tr><th>Iteración</th><th class="num">x</th><th class="num">y</th><th class="num">f(x, y)</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <p class="lab__lectura" id="gd-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="1.1">
+    <p class="caja__titulo">Reto 1.1</p>
+    <p>El cuaderno llama «alta» a \(\alpha = 0{,}3\) y la compara con \(\alpha = 0{,}1\). Prueba las dos. ¿Cuál llega más cerca del fondo en 50 pasos?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Mira la última fila de la tabla en los dos casos.">α = 0,1, porque es más prudente</button>
+      <button class="opcion" type="button" data-correcta>α = 0,3: llega al fondo exacto</button>
+      <button class="opcion" type="button" data-pista="Compara f(x, y) en la iteración 50: no es igual.">Las dos llegan igual de cerca</button>
+    </div>
+    <p class="respuesta">Correcto. Con 0,3 el camino llega a \((2{,}0000;\ 3{,}0000)\); con 0,1 queda en \((1{,}96;\ 2{,}98)\). «Alto» o «bajo» no tiene sentido en abstracto: depende del terreno. En este terreno, 0,3 está todavía por debajo del límite, que es 0,38.</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="1.2">
+    <p class="caja__titulo">Reto 1.2</p>
+    <p>Ahora prueba \(\alpha = 0{,}4\). ¿Qué pasa?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Mira cómo crece f(x, y) en la tabla.">Llega aún más rápido</button>
+      <button class="opcion" type="button" data-correcta>El camino se escapa: f crece hasta millones</button>
+      <button class="opcion" type="button" data-pista="El camino no se queda quieto: salta cada vez más lejos.">Se queda en el punto de partida</button>
+    </div>
+    <p class="respuesta">Correcto. Después de 50 pasos, \(f\) vale unos 2 millones. Cada salto cruza el valle y cae más alto, como en el laboratorio 7 de la lección 1. Con 0,38 el camino tampoco se escapa, pero rebota tanto que en 50 pasos sigue lejos (\(f \approx 86\)). El mejor α está entre los dos extremos.</p>
+  </aside>
+
+  <p class="util">el método <code>.fit()</code> de los modelos del cuaderno 3 hace por dentro algo parecido a estas siete líneas: busca los parámetros con la menor pérdida, paso a paso. Cuando un modelo «no converge», el problema suele ser el tamaño del paso o la escala de los datos.</p>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 1 · El motor">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>En el fondo del terreno, todas las derivadas parciales valen cero: \(\nabla f = 0\). Con pocas variables puedes resolverlo; con muchas, bajas paso a paso.</li>
+      <li>El bucle <code>for</code> es la repetición de la fórmula \(x_{k+1} = x_k - \alpha\,\nabla f(x_k)\); en Excel, arrastrar una fórmula hacia abajo.</li>
+      <li>α «alto» o «bajo» depende del terreno: aquí 0,3 es el mejor y 0,4 ya se escapa.</li>
+      <li>Prueba un algoritmo donde conoces la respuesta antes de usarlo donde no la conoces.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \nabla f(x, y) = \begin{pmatrix} 2x - 2y + 2 \\ 4y - 2x - 8 \end{pmatrix} \qquad\quad x_{k+1} = x_k - \alpha\,\nabla f(x_k) \]</div>
+    <p class="lee">el gradiente reúne las dos derivadas parciales; cada paso resta α veces el gradiente a la posición actual.</p>
+    <p>Primer paso con \(\alpha = 0{,}1\): \(\nabla f(-5;\,10) = (-28;\ 42)\), así que \(x_1 = (-5;\ 10) - 0{,}1 \times (-28;\ 42) = (-2{,}2;\ 5{,}8)\) y \(f\) baja de 245 a 56,84.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(\alpha\)</td><td>«alfa»</td><td>El tamaño del paso. En la lección 1 se llamó \(\gamma\).</td></tr>
+        <tr><td>\(\nabla f = 0\)</td><td>«nabla efe igual a cero»</td><td>Todas las pendientes valen cero: el terreno es plano. Así se encuentra el fondo a mano.</td></tr>
+        <tr><td>\(\begin{pmatrix} a \\ b \end{pmatrix}\)</td><td>«vector columna»</td><td>Una lista de números escrita en vertical. Aquí: las dos derivadas parciales.</td></tr>
+      </tbody>
+    </table></div>
+    <details class="mas">
+      <summary>Para saber más: de dónde sale el límite 0,38</summary>
+      <p>El terreno es más curvo en una dirección que en otra. Su curvatura máxima es \(\lambda_{\max} = 3 + \sqrt{5} \approx 5{,}24\) (un «valor propio» de la matriz de segundas derivadas). El descenso no se escapa si \(\alpha < 2/\lambda_{\max} \approx 0{,}382\). En la lección 1 el límite era 0,0997, porque ese terreno tenía una curvatura máxima de 20,06.</p>
+    </details>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la práctica</p>
+    <p>Cuaderno <em>1_practica_optimizacion_regularizacion</em>, celdas 0–17. En la celda 10 el cuaderno ya usa α = 0,3 aunque el título del caso base dice 0,1; por eso sus salidas del «caso base» y de «α alta» coinciden. El nombre del archivo anuncia regularización: ese tema llega en la clase del 28 de noviembre.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 4: Parte 2. Explorar y limpiar los datos (cuaderno 2)
+     Insumo:    universidad_desercion.csv (20 000 filas, 11 columnas)
+     Resultado: lista de exploración, detective de datos, decisiones con cuántos registros
+                afectan, logaritmo y búsqueda de la señal
+     ============================================================ -->
+<section class="parte" id="p2">
+<div class="contenedor">
+  <p class="parte__num">Parte 2 · Cuaderno 2</p>
+  <h2>Antes del modelo: explorar y limpiar</h2>
+  <p class="parte__pregunta">¿Qué hay que revisar y arreglar antes de que una máquina aprenda?</p>
+
+  <p>La base de deserción tiene una estudiante de 2 años, una región llamada «999XX» y una familia con un ingreso de S/ 215 839 al mes. Un modelo aprende todo lo que hay en los datos, <strong>también los errores</strong>: minimiza la pérdida en la muestra que le das (lección 1, parte 1). Si la muestra está sucia, aprende algo sucio.</p>
+
+  <h3>La lista de exploración</h3>
+  <p>Antes de cambiar nada, se mira. Esta lista sigue tu guía de análisis de datos y los resultados del cuaderno 2:</p>
+  <div class="tabla-desliza"><table class="datos">
+    <thead><tr><th>Qué revisar</th><th>Python (pandas)</th><th>En Excel sería…</th><th>Qué encontró el cuaderno</th></tr></thead>
+    <tbody>
+      <tr><td>Tamaño</td><td><code>df.shape</code></td><td>Ir a la última fila</td><td>20 000 filas, 11 columnas</td></tr>
+      <tr><td>Tipo de cada columna</td><td><code>df.dtypes</code></td><td>Formato de celda</td><td>8 numéricas, 3 de texto</td></tr>
+      <tr><td>Duplicados</td><td><code>df.duplicated().sum()</code></td><td>Quitar duplicados</td><td>0</td></tr>
+      <tr><td>Estadísticos básicos</td><td><code>df.describe()</code></td><td>MIN, MAX, PROMEDIO</td><td>Edad mínima: 2 años. Ingreso máximo: S/ 215 839</td></tr>
+      <tr><td>Faltantes</td><td><code>df.isna().mean()</code></td><td>Filtrar celdas vacías</td><td>Promedio 2,0 %; ingresos 0,5 %; inglés 5,8 %</td></tr>
+      <tr><td>Frecuencias de categorías</td><td><code>df[col].value_counts()</code></td><td>Tabla dinámica</td><td>«999XX» en región; «Bilingue_Senior» en inglés</td></tr>
+      <tr><td>Cuántas categorías</td><td><code>df[col].nunique()</code></td><td>Lista del filtro</td><td>11 067 colegios distintos</td></tr>
+      <tr><td><strong>Faltantes disfrazados</strong></td><td>Buscar 999, −99, «ND»</td><td>Filtro con «999»</td><td>«999XX» es un código, no una región</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure class="lab lab--ancho" id="demo-detective">
+    <p class="lab__titulo">Laboratorio 2 · Detective de datos</p>
+    <p class="lab__guia">Seis filas reales de <code>universidad_desercion.csv</code>. Hay ocho problemas: algunos en una celda, otros en una columna entera. Haz clic en la celda o en el nombre de la columna que te parezca sospechosa.</p>
+    <div class="tabla-desliza"><table class="datos detective" id="detective-tabla"></table></div>
+    <p class="lab__lectura" id="detective-lectura" aria-live="polite"></p>
+    <ol class="ui" id="detective-hallazgos" style="margin-top:10px"></ol>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="2.1" id="reto-detective">
+    <p class="caja__titulo">Reto 2.1 · Encuentra los ocho</p>
+    <p>Encuentra los ocho problemas en el laboratorio. El reto se resuelve solo cuando los encuentres todos.</p>
+    <p class="respuesta respuesta--pendiente visible" id="detective-estado">Encontrados: 0 de 8.</p>
+    <p class="respuesta" id="detective-ok">Los encontraste todos. Uno de ellos, la edad de 2 años, <strong>el cuaderno no lo corrigió</strong>: en la base hay 1 920 «universitarios» menores de 16 años y 12 de 5 años o menos. Es una pregunta para llevar a clase.</p>
+  </aside>
+
+  <h3>Las decisiones de limpieza, ordenadas por la pregunta que responden</h3>
+  <p>Cada problema pide una pregunta distinta. La tabla muestra la decisión del cuaderno y <strong>cuántas filas afecta</strong>, como pide tu guía: nunca se borra sin contar.</p>
+  <div class="tabla-desliza"><table class="datos">
+    <thead><tr><th>Pregunta</th><th>Caso</th><th>Decisión del cuaderno</th><th class="num">Filas</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td>¿Falta el dato?</td><td>Promedio e ingresos vacíos</td><td>Eliminar esas filas</td><td class="num">20 000 → 19 503</td><td>Son pocas (2,5 %). Inventar un valor (imputar) podría sesgar.</td></tr>
+      <tr><td>¿Es un código y no un dato?</td><td>Región «999XX»; inglés vacío</td><td>Conservar solo las 5 regiones válidas; eliminar vacíos</td><td class="num">19 503 → 18 354</td><td>Un código no describe a nadie.</td></tr>
+      <tr><td>¿Hay variantes raras?</td><td>«Bilingue_Senior» (15 casos)</td><td>Fusionar con «Avanzado»</td><td class="num">—</td><td>Con tan pocos casos, el modelo no puede aprender nada de ellas.</td></tr>
+      <tr><td>¿La codificación confunde?</td><td><code>trabaja</code> vale 1 o 2</td><td>Pasar a 0 = no, 1 = sí</td><td class="num">—</td><td>0/1 se lee como «sí o no» y se interpreta directo.</td></tr>
+      <tr><td>¿La columna no predice nada?</td><td><code>id_estudiante</code></td><td>Eliminar la columna</td><td class="num">—</td><td>Es un número de lista: no dice nada de la persona.</td></tr>
+      <tr><td>¿Hay demasiadas categorías?</td><td>11 067 colegios</td><td>Eliminar la columna</td><td class="num">—</td><td>Con casi un colegio por estudiante, el modelo memorizaría en lugar de aprender.</td></tr>
+      <tr><td>¿Dos columnas dicen lo mismo?</td><td>Beca y cuota (correlación 0,9997)</td><td>Eliminar la beca</td><td class="num">—</td><td>Una copia no agrega información y confunde los coeficientes.</td></tr>
+      <tr><td>¿La escala distorsiona?</td><td>Ingresos con cola larga</td><td>Usar el logaritmo</td><td class="num">—</td><td>Ver el laboratorio 3.</td></tr>
+    </tbody>
+  </table></div>
+
+  <pre class="codigo" data-lenguaje="Python"><span class="com"># PROCESO 3.1 y 3.3: Quitar faltantes y códigos inválidos (cuaderno 2, celdas 20 y 24)
+# Insumo:    df con 20 000 filas | Resultado: df con 18 354 filas</span>
+df.dropna(subset=['promedio_acumulado', 'ingresos_familiares'], inplace=True)
+<span class="com"># Antes: 20 000 filas | Después: 19 503 (salen las que tienen vacío en esas dos columnas)</span>
+df = df[df['region'].isin(['Norte', 'Sur', 'Centro', 'Este', 'Oeste'])]
+<span class="com"># Antes: 19 503 filas | Después: menos filas (sale «999XX»); como un filtro de Excel con 5 casillas marcadas</span>
+
+<span class="com"># PROCESO 3.5: Logaritmo de los ingresos (celda 28)</span>
+df['ingresos_familiares_log'] = np.log1p(df['ingresos_familiares'])
+<span class="com"># Antes: columna en soles (de 0 a 215 839) | Después: columna nueva en escala logarítmica (de 0 a 12,3)
+# En Excel: una columna con =LN(1 + C2)</span></pre>
+
+  <figure class="lab" id="demo-log">
+    <p class="lab__titulo">Laboratorio 3 · ¿Por qué el logaritmo?</p>
+    <p class="lab__guia">El histograma muestra los ingresos familiares de los 19 900 estudiantes con dato. Cambia la escala.</p>
+    <canvas id="log-lienzo" aria-label="Histograma de los ingresos familiares en soles o en logaritmo"></canvas>
+    <div class="lab__controles" role="group" aria-label="Escala">
+      <button class="boton boton--hueco" type="button" data-escala="crudo" aria-pressed="true">En soles</button>
+      <button class="boton boton--hueco" type="button" data-escala="log" aria-pressed="false">En logaritmo</button>
+    </div>
+    <p class="lab__lectura" id="log-lectura" aria-live="polite"></p>
+  </figure>
+  <p>El logaritmo convierte multiplicaciones en sumas: pasar de S/ 1 000 a S/ 2 000 y de S/ 100 000 a S/ 200 000 es el mismo salto (duplicar). Así, unos pocos ingresos enormes dejan de dominar a la pérdida cuadrática, que castiga mucho los extremos (lección 1, parte 1). Por la misma razón, la ecuación de Mincer usa el logaritmo del salario.</p>
+
+  <h3>¿Dónde está la señal?</h3>
+  <p>El cuaderno compara la tasa de deserción por grupos: divide cada variable en cinco grupos del mismo tamaño (quintiles) y calcula qué porcentaje deserta en cada uno.</p>
+  <figure class="lab" id="demo-senal">
+    <p class="lab__titulo">Laboratorio 4 · La deserción por grupos</p>
+    <p class="lab__guia">Elige una variable. La línea roja es la tasa de toda la base: 15,1 %.</p>
+    <div class="lab__controles" role="group" aria-label="Variable" style="margin-top:0" id="senal-botones"></div>
+    <canvas id="senal-lienzo" aria-label="Tasa de deserción por grupo de la variable elegida"></canvas>
+    <p class="lab__lectura" id="senal-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="2.2">
+    <p class="caja__titulo">Reto 2.2</p>
+    <p>En todos los grupos, de todas las variables, la deserción ronda el 15 %. ¿Qué anticipa eso para el modelo?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Un modelo más complejo no encuentra lo que no está en los datos.">Que necesita un modelo más complejo</button>
+      <button class="opcion" type="button" data-correcta>Que tendrá muy poco que aprender: a todos les dará cerca de 15 %</button>
+      <button class="opcion" type="button" data-pista="Las barras están a la misma altura: ninguna variable separa a los que desertan.">Que el promedio será la variable más importante</button>
+    </div>
+    <p class="respuesta">Correcto. Si la deserción es la misma en todos los grupos, la mejor predicción para cada estudiante es la tasa general. Es la esperanza condicional de la lección 1 (sección 3.5): si \(E[Y\mid X]\) es plana, saber \(X\) no ayuda. Por eso el modelo de la parte 3 da a todos entre 12,7 % y 17,3 %, y nunca llega al 50 % que necesita para decir «deserta».</p>
+  </aside>
+
+  <p class="util">explorar antes de modelar te dice qué esperar del modelo. Si ningún grupo se distingue del resto, ningún algoritmo hará milagros; si los datos tienen errores, el modelo los aprenderá como si fueran reales.</p>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 2 · Explorar y limpiar">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>Primero mirar, después cambiar: tamaño, tipos, duplicados, faltantes, estadísticos, frecuencias, <strong>faltantes disfrazados</strong> (999, «999XX») y valores imposibles.</li>
+      <li>Cada decisión de limpieza responde una pregunta: ¿falta?, ¿es un código?, ¿es rara?, ¿no predice?, ¿hay demasiadas categorías?, ¿es una copia?, ¿la escala distorsiona?</li>
+      <li>Toda eliminación se cuenta: 20 000 → 19 503 → 18 354 filas.</li>
+      <li>El logaritmo vuelve comparables los saltos proporcionales y doma los valores extremos.</li>
+      <li>Si la tasa del resultado es igual en todos los grupos, el modelo no tendrá señal que aprender.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \texttt{log1p}(x) = \ln(1 + x) \qquad\qquad r_{XY} = \frac{\operatorname{Cov}(X, Y)}{\sigma_X\,\sigma_Y} \]</div>
+    <p class="lee">el logaritmo se aplica a uno más el ingreso, para que un ingreso de 0 no dé error; la correlación es la covarianza medida en unidades de desviación estándar, entre −1 y 1.</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th><th>En el ejemplo</th></tr></thead>
+      <tbody>
+        <tr><td>\(\ln\)</td><td>«logaritmo natural»</td><td>El número al que hay que elevar \(e \approx 2{,}718\) para obtener \(x\).</td><td>\(\ln(1 + 215\,839) \approx 12{,}28\)</td></tr>
+        <tr><td>\(r_{XY}\)</td><td>«ere sub equis ye»</td><td>Correlación: 1 si dos variables suben juntas en línea recta; 0 si no hay relación lineal.</td><td>Beca y cuota: 0,9997</td></tr>
+        <tr><td>\(\sigma_X\)</td><td>«sigma sub equis»</td><td>Desviación estándar de \(X\).</td><td></td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la práctica</p>
+    <p>Cuaderno <em>2_preprocesamiento_desercion</em>: análisis inicial (celdas 4–16), preprocesamiento (19–28), exploración por variable (31–41) y correlaciones (43–44). Las cifras de este laboratorio se recalcularon con la misma base.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 5: Parte 3. Clasificación (cuaderno 3, ejemplo 1)
+     Insumo:    base limpia de deserción; base de empleo formal como contraste con señal
+     Resultado: código anotado, laboratorio del umbral y la matriz de confusión, métricas
+     ============================================================ -->
+<section class="parte" id="p3">
+<div class="contenedor">
+  <p class="parte__num">Parte 3 · Cuaderno 3, ejemplo 1</p>
+  <h2>Clasificar: de una probabilidad a una decisión</h2>
+  <p class="parte__pregunta">¿Cómo se convierte una probabilidad en un «sí» o un «no», y cómo se mide si la decisión fue buena?</p>
+
+  <h3>El código, proceso por proceso</h3>
+  <div class="tabla-desliza"><table class="datos mapa-procesos">
+    <thead><tr><th>N.º</th><th>Proceso</th><th>Insumo</th><th>Método</th><th>Resultado</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Elegir X e y</td><td>Base limpia (18 354 filas)</td><td>Seleccionar columnas; <code>get_dummies</code></td><td><code>X</code> con 11 columnas; <code>y</code> = deserción</td></tr>
+      <tr><td>2</td><td>Dividir</td><td><code>X</code>, <code>y</code></td><td><code>train_test_split(…, test_size=0.2, stratify=y)</code></td><td>14 683 filas para entrenar; 3 671 para probar</td></tr>
+      <tr><td>3</td><td>Ajustar</td><td>Datos de entrenamiento</td><td><code>LogisticRegression().fit</code></td><td>12 parámetros (11 coeficientes y la constante)</td></tr>
+      <tr><td>4</td><td>Predecir</td><td>Datos de prueba</td><td><code>predict_proba</code> y <code>predict</code></td><td>Una probabilidad y una decisión por estudiante</td></tr>
+      <tr><td>5</td><td>Evaluar</td><td>Decisiones y valores reales</td><td><code>confusion_matrix</code>, métricas</td><td>Matriz de confusión, exactitud, precisión, sensibilidad</td></tr>
+    </tbody>
+  </table></div>
+
+  <p><strong>Las variables de categoría se vuelven columnas 0/1</strong> (<em>dummies</em>). La región tiene 5 valores; <code>get_dummies(…, drop_first=True)</code> crea 4 columnas: Este, Norte, Oeste y Sur. «Centro» queda como <strong>categoría de referencia</strong>: un estudiante del Centro tiene 0 en las cuatro. ¿Por qué no 5 columnas? Porque la quinta siempre se deduce de las otras cuatro (las cinco suman 1), y esa copia confunde al modelo. La econometría llama a esto la «trampa de las variables dicotómicas».</p>
+  <div class="antes-despues">
+    <div><b>Antes</b><br>region = «Norte»</div><span>→</span>
+    <div><b>Después</b><br>region_Este = 0 · region_Norte = 1 · region_Oeste = 0 · region_Sur = 0</div>
+  </div>
+
+  <pre class="codigo" data-lenguaje="Python"><span class="com"># PROCESO 2: Dividir (cuaderno 3, celda 10)</span>
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+<span class="com"># Antes: 18 354 filas | Después: 14 683 para entrenar y 3 671 para probar.
+# stratify=y mantiene el 15,1 % de desertores en las dos partes. random_state=42 fija el sorteo: el mismo resultado cada vez.</span>
+
+<span class="com"># PROCESO 3: Ajustar (celda 12)</span>
+model_clf = LogisticRegression(max_iter=1000).fit(X_train, y_train)
+<span class="com"># Busca los 12 parámetros con la menor pérdida logarítmica, paso a paso (lección 1, partes 1 y 2).
+# max_iter=1000: como máximo 1 000 pasos del optimizador.</span>
+
+<span class="com"># PROCESO 4: Predecir (celda 15)</span>
+y_pred_proba = model_clf.predict_proba(X_test)[:, 1]   <span class="com"># probabilidad de desertar, entre 0 y 1</span>
+y_pred = model_clf.predict(X_test)                     <span class="com"># 1 si la probabilidad es 0,5 o más; 0 si no</span></pre>
+
+  <div class="tabla-desliza"><table class="datos traduccion">
+    <thead><tr><th>Python</th><th>Idea de la lección 1</th><th>En Excel sería…</th></tr></thead>
+    <tbody>
+      <tr><td><code>train_test_split</code></td><td>La muestra de prueba imita a los casos nuevos (parte 4)</td><td>Separar al azar el 20 % de las filas en otra hoja</td></tr>
+      <tr><td><code>.fit()</code></td><td>Minimizar la pérdida con descenso de gradiente (partes 1 y 2)</td><td>Solver: «minimizar la celda de error cambiando los parámetros»</td></tr>
+      <tr><td><code>predict_proba</code></td><td>Probabilidad condicional \(P(\text{deserta}\mid X)\) (parte 3)</td><td>Una columna con la fórmula del modelo para cada fila</td></tr>
+      <tr><td><code>predict</code></td><td>Una decisión con umbral 0,5</td><td><code>=SI(F2 &gt;= 0,5; 1; 0)</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>El umbral y la matriz de confusión</h3>
+  <p>El modelo da una probabilidad. Para decidir, hace falta un <strong>umbral</strong>: si la probabilidad lo supera, el estudiante se marca como «deserta». <code>predict</code> usa 0,5. Cada decisión cae en una de cuatro casillas: la <strong>matriz de confusión</strong>.</p>
+
+  <figure class="lab lab--ancho" id="demo-umbral">
+    <p class="lab__titulo">Laboratorio 5 · Mueve el umbral</p>
+    <p class="lab__guia">Arriba, las probabilidades que el modelo dio a cada persona del grupo de prueba, separadas por lo que pasó de verdad. Mueve el umbral y mira cómo cambian la matriz y las métricas. Compara la base de deserción con la de empleo formal, donde el modelo sí tiene señal.</p>
+    <div class="lab__controles" role="group" aria-label="Base de datos" style="margin-top:0">
+      <button class="boton boton--hueco" type="button" data-base="desercion" aria-pressed="true">Deserción (cuaderno 3)</button>
+      <button class="boton boton--hueco" type="button" data-base="formal" aria-pressed="false">Empleo formal (base de empleo de la práctica)</button>
+    </div>
+    <div class="lab__dos lab__dos--mapa" style="margin-top:10px">
+      <canvas id="umbral-hist" aria-label="Histograma de probabilidades predichas por clase real"></canvas>
+      <div>
+        <table class="matriz" id="umbral-matriz" aria-label="Matriz de confusión"></table>
+        <p class="lab__lectura" id="umbral-metricas" aria-live="polite" style="margin-top:8px"></p>
+      </div>
+    </div>
+    <div class="leyenda" id="umbral-leyenda"></div>
+    <div class="lab__controles">
+      <div class="lab__control"><label for="umbral-u">Umbral =</label><input type="range" id="umbral-u" min="0.01" max="0.99" step="0.01" value="0.5"><output id="umbral-u-out">0,50</output></div>
+    </div>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="3.1">
+    <p class="caja__titulo">Reto 3.1</p>
+    <p>Con la base de deserción, baja el umbral a 0,15. Ahora el modelo marca a muchos. ¿Mejoró?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="Mira la precisión: de cada 100 marcados, ¿cuántos desertan de verdad?">Sí: ahora encuentra a muchos desertores</button>
+      <button class="opcion" type="button" data-correcta>No: marca casi al azar; la precisión queda en 15 %, la tasa general</button>
+      <button class="opcion" type="button" data-pista="El umbral cambia a quién se marca, no lo que el modelo aprendió.">No cambia nada</button>
+    </div>
+    <p class="respuesta">Correcto. Encuentra más desertores porque marca a más gente, pero de cada 100 marcados solo unos 15 desertan: lo mismo que si eligieras nombres al azar. El umbral no crea señal. Este modelo ordena a los estudiantes casi como una moneda.</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="3.2">
+    <p class="caja__titulo">Reto 3.2</p>
+    <p>Cambia a «Empleo formal». Quieres encontrar al menos al 90 % de los trabajadores formales. ¿Qué pasa al bajar el umbral hasta lograrlo?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-correcta>La sensibilidad sube, pero la precisión baja: marcas también a muchos informales</button>
+      <button class="opcion" type="button" data-pista="Mueve el umbral y mira las dos métricas a la vez.">Las dos métricas suben juntas</button>
+      <button class="opcion" type="button" data-pista="Con un umbral más bajo, el modelo marca a más personas, no a menos.">El modelo deja de marcar a los formales</button>
+    </div>
+    <p class="respuesta">Correcto. Es el intercambio central de la clasificación: <strong>más sensibilidad cuesta precisión</strong>. Qué conviene depende del costo de cada error. Para ofrecer una tutoría barata a posibles desertores, conviene encontrar a casi todos aunque se marque a algunos de más. Para una auditoría costosa de la Contraloría, conviene que los marcados sean casi seguros.</p>
+  </aside>
+
+  <h3>Cuatro métricas, cuatro preguntas</h3>
+  <div class="tabla-desliza"><table class="datos">
+    <thead><tr><th>Métrica</th><th>La pregunta que responde</th><th>Deserción (umbral 0,5)</th><th>Empleo formal (umbral 0,5)</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Exactitud</strong> (<em>accuracy</em>)</td><td>¿Qué porcentaje de todas las decisiones acerté?</td><td class="num">84,9 %</td><td class="num">82,6 %</td></tr>
+      <tr><td><strong>Precisión</strong> (<em>precision</em>)</td><td>De los que marqué, ¿cuántos eran de verdad?</td><td class="num">— (no marcó a nadie)</td><td class="num">75,8 %</td></tr>
+      <tr><td><strong>Sensibilidad</strong> (<em>recall</em>)</td><td>De los que eran de verdad, ¿a cuántos marqué?</td><td class="num">0 %</td><td class="num">64,7 %</td></tr>
+      <tr><td><strong>F1</strong></td><td>¿Hay equilibrio entre precisión y sensibilidad?</td><td class="num">0</td><td class="num">0,70</td></tr>
+    </tbody>
+  </table></div>
+
+  <aside class="caja caja--filosofia">
+    <p class="caja__titulo">Puente con la lección 1: la precisión y la sensibilidad son Bayes otra vez</p>
+    <p>La precisión es \(P(\text{deserta de verdad}\mid\text{marcado})\). La sensibilidad es \(P(\text{marcado}\mid\text{deserta de verdad})\). Son las dos condicionales invertidas de la sección 3.3 de la lección 1, la del defecto genético: no son iguales. Cuando el resultado es raro (pocos desertores, pocos hospitalizados), incluso un modelo sensible tendrá poca precisión: muchos marcados serán falsos positivos. Es la falacia de la tasa base, ahora en un modelo.</p>
+  </aside>
+
+  <p class="util">elegir la métrica es elegir qué error duele más. La exactitud engaña cuando una clase es mucho más común que la otra, como en tu proyecto del SIS. Ahí conviene mirar la sensibilidad y la precisión, y compararlas con un modelo que marca al azar.</p>
+
+  <details class="mas">
+    <summary>Para saber más: los coeficientes y la razón de probabilidades (<em>odds ratio</em>)</summary>
+    <p>El cuaderno imprime los coeficientes de la regresión logística y su exponencial, la razón de probabilidades. Por ejemplo, para «inglés intermedio» la razón es 1,116: frente a la categoría de referencia (avanzado), las probabilidades a favor de desertar serían 11,6 % mayores. Pero con un modelo que ordena casi al azar (área bajo la curva ROC = 0,49, cuando 0,5 es una moneda), esos números no dicen nada útil. Y aunque el modelo fuera bueno, un coeficiente predictivo no es un efecto causal (lección 1, parte 5).</p>
+  </details>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 3 · Clasificar">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>Las categorías se vuelven columnas 0/1 (<em>dummies</em>), dejando una como referencia.</li>
+      <li><code>stratify</code> mantiene la misma proporción de cada clase en entrenamiento y prueba.</li>
+      <li>El modelo da probabilidades; el <strong>umbral</strong> las convierte en decisiones. 0,5 no es obligatorio.</li>
+      <li>Exactitud: ¿cuánto acerté en total? Precisión: de los marcados, ¿cuántos eran? Sensibilidad: de los que eran, ¿a cuántos marqué?</li>
+      <li>Bajar el umbral sube la sensibilidad y baja la precisión. El umbral no crea señal.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \text{Exactitud} = \frac{VP + VN}{VP + VN + FP + FN} \qquad \text{Precisión} = \frac{VP}{VP + FP} \qquad \text{Sensibilidad} = \frac{VP}{VP + FN} \]</div>
+    <div class="formula-grande">\[ F_1 = 2\cdot\frac{\text{Precisión}\cdot\text{Sensibilidad}}{\text{Precisión} + \text{Sensibilidad}} \]</div>
+    <p class="lee">cada métrica divide los aciertos que le interesan entre el grupo que le interesa: todas las decisiones, los marcados o los positivos reales.</p>
+    <p>Con empleo formal y umbral 0,5: \(VP = 545\), \(FP = 174\), \(FN = 298\), \(VN = 1\,697\). Precisión \(= \tfrac{545}{719} = 0{,}758\); sensibilidad \(= \tfrac{545}{843} = 0{,}647\).</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>En inglés</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(VP\)</td><td><em>TP</em>, true positive</td><td>Verdadero positivo: marcado y lo era.</td></tr>
+        <tr><td>\(FP\)</td><td><em>FP</em>, false positive</td><td>Falso positivo: marcado, pero no lo era. En econometría, «error de tipo I».</td></tr>
+        <tr><td>\(FN\)</td><td><em>FN</em>, false negative</td><td>Falso negativo: no marcado, pero lo era. En econometría, «error de tipo II».</td></tr>
+        <tr><td>\(VN\)</td><td><em>TN</em>, true negative</td><td>Verdadero negativo: no marcado y no lo era.</td></tr>
+        <tr><td>\(F_1\)</td><td><em>F1-score</em></td><td>Media armónica: es baja si cualquiera de las dos métricas es baja.</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la práctica</p>
+    <p>Cuaderno <em>3_ejemplos_clasificacion_regresion</em>, ejemplo 1 (celdas 1–20). La base de empleo formal (<code>empleo_informalidad_peru.csv</code>) está en la carpeta de la práctica; aquí se usó para mostrar un modelo con señal: 13 566 personas tras quitar edades imposibles, horas con código 999 y vacíos; regresión logística con las mismas reglas del cuaderno.</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 6: Parte 4. Regresión (cuaderno 3, ejemplo 2)
+     Insumo:    resultados de Advertising; base de empleo para la recta
+     Resultado: laboratorio «traza tu recta», MSE y R² en vivo
+     ============================================================ -->
+<section class="parte" id="p4">
+<div class="contenedor">
+  <p class="parte__num">Parte 4 · Cuaderno 3, ejemplo 2</p>
+  <h2>Regresión: predecir un número</h2>
+  <p class="parte__pregunta">¿Qué tan bueno es un modelo que predice un número?</p>
+
+  <p>El ejemplo 2 del cuaderno predice las ventas de un producto con el gasto en publicidad en TV, radio y periódico (datos <em>Advertising</em>, 200 mercados). La regresión lineal da:</p>
+  <div class="formula-grande">\[ \widehat{\text{ventas}} = 2{,}979 + 0{,}0447\,\text{TV} + 0{,}1892\,\text{Radio} + 0{,}0028\,\text{Periódico} \]</div>
+  <p>Léelo así: con TV y periódico fijos, mil dólares más en radio <strong>se asocian</strong> con 189 unidades más de ventas. En los 40 mercados de prueba, el error cuadrático medio es 3,17 y el \(R^2\) es 0,90. ¿Qué significan esos dos números? El laboratorio lo muestra con datos peruanos.</p>
+
+  <figure class="lab lab--ancho" id="demo-recta">
+    <p class="lab__titulo">Laboratorio 6 · Traza tu recta</p>
+    <p class="lab__guia">Cada punto es un trabajador de la base de empleo de la práctica: años de educación (eje horizontal) y logaritmo de su ingreso laboral (eje vertical). Mueve la altura <em>a</em> y la inclinación <em>b</em>. El error se mide con los 2 714 trabajadores del grupo de prueba.</p>
+    <canvas id="recta-lienzo" aria-label="Nube de puntos de educación e ingreso con la recta elegida"></canvas>
+    <div class="lab__controles">
+      <div class="lab__control"><label for="recta-a">a =</label><input type="range" id="recta-a" min="4" max="8" step="0.01" value="7"><output id="recta-a-out">7,00</output></div>
+      <div class="lab__control"><label for="recta-b">b =</label><input type="range" id="recta-b" min="-0.1" max="0.3" step="0.001" value="0"><output id="recta-b-out">0,000</output></div>
+      <button class="boton boton--hueco" type="button" id="recta-media">Recta de la media</button>
+      <button class="boton" type="button" id="recta-mejor">Mejor recta (mínimos cuadrados)</button>
+    </div>
+    <p class="lab__lectura" id="recta-lectura" aria-live="polite"></p>
+  </figure>
+
+  <aside class="caja caja--reto" data-reto="4.1">
+    <p class="caja__titulo">Reto 4.1</p>
+    <p>Pulsa «Recta de la media»: una línea horizontal a la altura del ingreso promedio. ¿Qué \(R^2\) tiene?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-correcta>Cerca de 0</button>
+      <button class="opcion" type="button" data-pista="R² compara tu recta con esta misma recta horizontal.">Cerca de 1</button>
+      <button class="opcion" type="button" data-pista="Pulsa el botón y lee el número.">Cerca de 0,5</button>
+    </div>
+    <p class="respuesta">Correcto. \(R^2\) compara tu modelo con el mejor número único: la media (lección 1, parte 1). Si tu recta no mejora a la media, \(R^2 = 0\). Si no comete error, \(R^2 = 1\). Si es peor que la media, \(R^2\) puede ser negativo: pruébalo con una recta muy inclinada.</p>
+  </aside>
+
+  <aside class="caja caja--reto" data-reto="4.2">
+    <p class="caja__titulo">Reto 4.2</p>
+    <p>La mejor recta tiene \(b = 0{,}109\). Como el eje vertical está en logaritmos, ¿qué significa?</p>
+    <div class="opciones">
+      <button class="opcion" type="button" data-pista="En logaritmos, la pendiente se lee como un cambio porcentual, no en soles.">Cada año de educación suma S/ 0,109</button>
+      <button class="opcion" type="button" data-correcta>Cada año más de educación se asocia con un ingreso cerca de 11 % mayor</button>
+      <button class="opcion" type="button" data-pista="La recta muestra una asociación en los datos, no un experimento.">Cada año de educación causa un ingreso 11 % mayor</button>
+    </div>
+    <p class="respuesta">Correcto. \(e^{0{,}109} - 1 \approx 0{,}115\): un 11,5 % más por año. Pero es una <strong>asociación</strong>: quienes estudian más también pueden diferir en habilidades, recursos familiares o región. Separar el efecto de la educación es tarea de la econometría: Yamada (2007), que leíste en la <a href="econometria-01.html">clase 1 de econometría</a>, estima retornos de 6 % a 17 % según el nivel y el grupo.</p>
+  </aside>
+
+  <pre class="codigo" data-lenguaje="Python"><span class="com"># PROCESO 3 a 6 del ejemplo 2 (cuaderno 3, celdas 32–39)</span>
+model_reg = LinearRegression().fit(X_train, y_train)
+<span class="com"># Busca la recta (o el plano) con el menor error cuadrático medio. Aquí la solución es exacta:
+# hay una fórmula, como en la parte 1, y no hace falta bajar paso a paso.</span>
+y_pred = model_reg.predict(X_test)                 <span class="com"># Antes: X_test | Después: una venta predicha por mercado</span>
+mse = mean_squared_error(y_test, y_pred)           <span class="com"># promedio de (real − predicho)²: 3,17</span>
+r2 = r2_score(y_test, y_pred)                      <span class="com"># 1 − MSE / MSE de la media: 0,90</span></pre>
+  <div class="tabla-desliza"><table class="datos traduccion">
+    <thead><tr><th>Python</th><th>Idea</th><th>En Excel sería…</th></tr></thead>
+    <tbody>
+      <tr><td><code>LinearRegression().fit</code></td><td>Mínimos cuadrados: la recta con la menor pérdida cuadrática</td><td><code>=ESTIMACION.LINEAL(y; x)</code>, o «Agregar línea de tendencia» en un gráfico</td></tr>
+      <tr><td><code>mean_squared_error</code></td><td>Pérdida empírica \(R_{\text{emp}}\) de la lección 1</td><td><code>=PROMEDIO((B2:B41 - C2:C41)^2)</code></td></tr>
+      <tr><td><code>r2_score</code></td><td>Cuánto mejora a la media</td><td>«Presentar el valor R cuadrado en el gráfico»</td></tr>
+    </tbody>
+  </table></div>
+
+  <p class="util">el \(R^2\) y el MSE dicen qué tan bien predice el modelo en casos nuevos. No dicen si los coeficientes son causales. Un \(R^2\) bajo, como 0,24 en la educación, no hace inútil la recta: el ingreso depende de muchas otras cosas.</p>
+
+  <aside class="caja caja--recuerda" data-origen="Parte 4 · Regresión">
+    <p class="caja__titulo">Recuerda</p>
+    <ul>
+      <li>La regresión lineal busca la recta con el menor error cuadrático medio; con una sola variable, en el laboratorio: \(a = 5{,}69\), \(b = 0{,}109\).</li>
+      <li>\(R^2 = 1 - \text{MSE}_{\text{modelo}}/\text{MSE}_{\text{media}}\): 0 si no mejora a la media; 1 si no comete error.</li>
+      <li>Con el resultado en logaritmos, \(100\,b\) es, más o menos, el cambio porcentual por unidad de \(X\).</li>
+      <li>Un coeficiente de regresión describe una asociación; no prueba una causa.</li>
+    </ul>
+  </aside>
+
+  <aside class="caja caja--formula">
+    <p class="caja__titulo">La fórmula</p>
+    <div class="formula-grande">\[ \text{MSE} = \frac{1}{n}\sum_{i=1}^{n}\big(y_i - \hat y_i\big)^2 \qquad\qquad R^2 = 1 - \frac{\sum_i (y_i - \hat y_i)^2}{\sum_i (y_i - \bar y)^2} \]</div>
+    <p class="lee">el MSE promedia los errores al cuadrado; el \(R^2\) compara esos errores con los de predecir siempre la media.</p>
+    <p>En el laboratorio, con la mejor recta: \(\text{MSE} = 0{,}503\) y el MSE de la media es 0,658, así que \(R^2 = 1 - \tfrac{0{,}503}{0{,}658} \approx 0{,}24\).</p>
+    <div class="tabla-desliza"><table class="simbolos">
+      <thead><tr><th>Símbolo</th><th>Se lee</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td>\(\hat y_i\)</td><td>«ye sombrero sub i»</td><td>La predicción para el caso \(i\).</td></tr>
+        <tr><td>\(\bar y\)</td><td>«ye barra»</td><td>La media de los valores reales.</td></tr>
+        <tr><td>\(R^2\)</td><td>«erre cuadrado»</td><td>Coeficiente de determinación: qué parte de la variación explica el modelo, frente a la media.</td></tr>
+        <tr><td>MSE</td><td>«error cuadrático medio»</td><td>En inglés, <em>mean squared error</em>. Es la pérdida empírica de la lección 1.</td></tr>
+      </tbody>
+    </table></div>
+  </aside>
+
+  <aside class="caja caja--clase">
+    <p class="caja__titulo">En la práctica</p>
+    <p>Cuaderno <em>3_ejemplos_clasificacion_regresion</em>, ejemplo 2 (celdas 21–39): coeficientes en la celda 33 y métricas en la celda 39. El laboratorio usa la base de empleo de la carpeta de la práctica; los años de educación se asignaron por nivel (primaria 6, secundaria 11, superior no universitaria 14, universitaria 16, maestría 18, doctorado 21).</p>
+  </aside>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 7: Cierre
+     Insumo:    las cuatro partes
+     Resultado: mapa del proyecto con sus enlaces a la lección 1, resumen técnico y lo que viene
+     ============================================================ -->
+<section class="parte" id="cierre">
+<div class="contenedor">
+  <p class="parte__num">Cierre</p>
+  <h2>Cómo encaja todo</h2>
+  <p>El mismo recorrido de la lección 1, ahora con el código que lo ejecuta:</p>
+  <div class="tabla-desliza"><table class="datos">
+    <thead><tr><th>Paso</th><th>Código de la práctica</th><th>Idea de la lección 1</th><th>Lo que aprendiste hoy</th></tr></thead>
+    <tbody>
+      <tr><td>Datos</td><td><code>read_csv</code>, <code>dropna</code>, <code>log1p</code></td><td>Muestra i.i.d. (parte 4)</td><td>Explorar, contar y limpiar; la señal se ve antes del modelo</td></tr>
+      <tr><td>Pérdida</td><td><code>LogisticRegression</code>, <code>LinearRegression</code></td><td>Pérdida logarítmica y cuadrática (parte 1)</td><td>Cada modelo tiene su pérdida</td></tr>
+      <tr><td>Descenso</td><td><code>punto - alpha * gradiente</code></td><td>Descenso de gradiente (parte 2)</td><td>El bucle <code>for</code> es la fórmula repetida; α depende del terreno</td></tr>
+      <tr><td>Predicción</td><td><code>predict_proba</code>, <code>predict</code></td><td>Probabilidad condicional y FEC (parte 3)</td><td>El umbral convierte probabilidades en decisiones</td></tr>
+      <tr><td>Evaluación</td><td><code>confusion_matrix</code>, <code>r2_score</code></td><td>Bayes y la tasa base (parte 3); el mejor número es la media (parte 1)</td><td>Precisión, sensibilidad y \(R^2\)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Resumen técnico de la práctica</h3>
+  <div class="tabla-desliza"><table class="datos">
+    <thead><tr><th>Paquete</th><th>Para qué se usó</th><th>Funciones principales</th></tr></thead>
+    <tbody>
+      <tr><td><code>numpy</code></td><td>Cálculo con vectores: el gradiente y la trayectoria</td><td><code>np.array</code>, <code>np.log1p</code>, <code>np.linalg.norm</code></td></tr>
+      <tr><td><code>pandas</code></td><td>Tablas de datos: leer, explorar y limpiar</td><td><code>read_csv</code>, <code>describe</code>, <code>value_counts</code>, <code>dropna</code>, <code>get_dummies</code></td></tr>
+      <tr><td><code>matplotlib</code>, <code>seaborn</code></td><td>Gráficos: curvas de nivel, histogramas, mapas de calor</td><td><code>plt.contour</code>, <code>sns.histplot</code>, <code>sns.heatmap</code></td></tr>
+      <tr><td><code>scikit-learn</code></td><td>Modelos y métricas</td><td><code>train_test_split</code>, <code>LogisticRegression</code>, <code>LinearRegression</code>, <code>confusion_matrix</code>, <code>r2_score</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <p><strong>Lo que viene.</strong> El 28 de noviembre: capacidad de los modelos, sobreajuste y regularización (Ridge y Lasso). El 29: validación cruzada. Y en econometría, la <a href="econometria-01.html">clase 1</a> mira los mismos datos desde otra pregunta: no qué pasará, sino qué causa qué.</p>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 8: Ficha de repaso
+     ============================================================ -->
+<section class="parte" id="ficha">
+<div class="contenedor ancho">
+  <p class="parte__num">Ficha de repaso</p>
+  <h2>Todo lo que debes recordar, en una sola vista</h2>
+  <p><button class="boton" type="button" id="imprimir-ficha">Imprimir la ficha</button>
+     <button class="boton boton--hueco" type="button" id="borrar-avance">Borrar mis respuestas</button></p>
+  <div class="ficha" id="ficha-contenido"></div>
+</div>
+</section>
+
+
+<!-- ============================================================
+     PROCESO 9: Créditos y autorías
+     ============================================================ -->
+<section class="parte" id="creditos">
+<div class="contenedor">
+  <p class="parte__num">Créditos</p>
+  <h2>Créditos y autorías</h2>
+  <p>Esta página es material de estudio. Explica con otras palabras, con ejemplos y con laboratorios los cuadernos de la práctica; no los reemplaza.</p>
+  <h3>Material del curso</h3>
+  <ul class="lecturas">
+    <li><strong>Pavel Coronado Castellanos</strong>, profesor del curso «Introducción a Machine Learning para Ciencias Sociales», Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública, Facultad de Ciencias Sociales, PUCP, 2026. Asistente del curso: Anderson Águila.</li>
+    <li>Práctica dirigida 1 (25-11-2026): cuadernos <em>1_practica_optimizacion_regularizacion.ipynb</em> (descenso de gradiente de la función \(x^2 + 2y^2 - 2xy + 2x - 8y + 10\)), <em>2_preprocesamiento_desercion.ipynb</em> y <em>3_ejemplos_clasificacion_regresion.ipynb</em>, con las bases <em>universidad_desercion.csv</em>, <em>universidad_desercion_limpia.csv</em> y <em>empleo_informalidad_peru.csv</em>. Son bases de práctica: no son cifras oficiales.</li>
+    <li>Coronado, P. (2026). <em>Machine Learning para las Ciencias Sociales: con aplicaciones en Python</em> (Material de Enseñanza n.º 16). Departamento de Economía, PUCP.</li>
+  </ul>
+  <h3>Otras fuentes</h3>
+  <ul class="lecturas">
+    <li>James, G., Witten, D., Hastie, T. y Tibshirani, R. Datos <em>Advertising</em> de <em>An Introduction to Statistical Learning</em> (Springer), usados en el cuaderno 3 a través del repositorio <em>scikit-learn-videos</em> de Kevin Markham.</li>
+    <li>Yamada, G. (2007). <em>Retornos a la educación superior en el mercado laboral: ¿vale la pena el esfuerzo?</em> Universidad del Pacífico / CIES (lectura de la clase 1 de econometría).</li>
+    <li>Mincer, J. (1974). <em>Schooling, Experience, and Earnings</em>. NBER.</li>
+    <li>Herramientas de los cuadernos: NumPy, pandas, Matplotlib, seaborn y scikit-learn (Pedregosa y otros, 2011, <em>Journal of Machine Learning Research</em>, 12).</li>
+  </ul>
+  <h3>Lo propio de esta página</h3>
+  <p>Son de Diego Sime y Claude Code: los laboratorios, las tablas de traducción Python ↔ fórmula ↔ Excel, el detective de datos y los cálculos con la base de empleo (regresión logística de empleo formal y recta de educación e ingreso). Los números de los laboratorios se recalcularon en Python con las bases de la práctica. Fórmulas: KaTeX (licencia MIT). Tipografías: Newsreader y Schibsted Grotesk (SIL Open Font License).</p>
+  <h3>Licencia</h3>
+  <p>La licencia MIT del repositorio cubre solo el código y el texto propios. Los cuadernos, las bases y las obras citadas pertenecen a sus autores.</p>
+</div>
+</section>
+
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <p>Aprendizaje de Machine Learning · Material de estudio basado en la práctica dirigida 1 del curso del <strong>prof. Pavel Coronado Castellanos</strong> (PUCP, 2026). Texto en lenguaje simple, según el estándar ASD-STE100 adaptado al español.</p>
+    <p>Elaborado por Diego Sime con Claude Code · <a href="#creditos">Créditos y autorías</a> · <a href="leccion-01.html">Lección 1</a> · <a href="index.html">Volver al curso</a> · <a href="https://github.com/diegosimemirror/aprendizaje_ML">Código en GitHub</a></p>
+  </div>
+</footer>
+
+<style>
+  /* Estilos propios de la lección 2: tabla del detective y matriz de confusión. */
+  table.detective td, table.detective th { cursor: pointer; white-space: nowrap; }
+  table.detective th { text-transform: none; letter-spacing: 0; font-family: Consolas, "Courier New", monospace; font-size: 0.8rem; }
+  table.detective td:hover, table.detective th:hover { background: var(--acento-suave); }
+  table.detective .hallado { background: var(--recuerda-fondo); outline: 2px solid var(--recuerda); outline-offset: -2px; font-weight: 700; }
+  table.detective .vacio { color: var(--tinta-suave); font-style: italic; }
+  table.matriz { border-collapse: collapse; font-family: var(--letra-titulos); font-size: 0.9rem; width: 100%; }
+  table.matriz th, table.matriz td { border: 1px solid var(--linea); padding: 8px; text-align: center; }
+  table.matriz th { color: var(--tinta-suave); font-weight: 600; font-size: 0.8rem; }
+  table.matriz td b { display: block; font-size: 1.25rem; }
+  table.matriz td.bien { background: var(--bien-fondo); }
+  table.matriz td.mal { background: var(--mal-fondo); }
+</style>
+</body>
+</html>

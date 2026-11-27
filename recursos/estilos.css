@@ -434,3 +434,25 @@ table.datos tr.destacada td { background: var(--acento-suave); font-weight: 600;
 /* KaTeX guarda, para lectores de pantalla, una copia oculta de cada fórmula con posición absoluta.
    Sin esta línea, esa copia escapa de las cajas con desplazamiento lateral y ensancha la página en el celular. */
 .tabla-desliza, .formula-grande, .lab__lectura, .katex-display, details.mas, .generadas { position: relative; }
+
+/* ============================================================
+   PROCESO 12: Código y traducciones (lecciones 2 en adelante)
+   Insumo:    bloques <pre class="codigo">, tablas .traduccion y .mapa-procesos
+   Resultado: código legible con sus comentarios, y tablas que traducen
+              código ↔ fórmula ↔ Excel, o Stata ↔ Python ↔ Excel
+   ============================================================ */
+code, pre.codigo { font-family: "JetBrains Mono", "Cascadia Code", Consolas, "Courier New", monospace; }
+code { font-size: 0.86em; background: var(--clase-fondo); padding: 1px 5px; border-radius: 5px; }
+pre.codigo { position: relative; background: #1e1e2a; color: #e8e8f0; border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 0.86rem; line-height: 1.55; margin: 1em 0; }
+pre.codigo .com { color: #9ca3af; }          /* comentarios */
+pre.codigo .clave { color: #c4b5fd; }        /* palabras clave y funciones */
+pre.codigo .cad { color: #fcd34d; }          /* textos entre comillas */
+pre.codigo .num { color: #6ee7b7; }          /* números */
+pre.codigo[data-lenguaje]::before { content: attr(data-lenguaje); position: absolute; top: 6px; right: 10px; font-family: var(--letra-titulos); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; }
+table.traduccion td, table.traduccion th { vertical-align: top; }
+table.traduccion td:first-child code, table.traduccion td.codigo code { white-space: pre-wrap; }
+table.mapa-procesos td:first-child { font-weight: 700; color: var(--acento); white-space: nowrap; }
+.antes-despues { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; font-family: var(--letra-titulos); font-size: 0.88rem; margin: 6px 0 12px; }
+.antes-despues > div { background: var(--papel-2); border: 1px solid var(--linea); border-radius: 8px; padding: 8px 10px; }
+.antes-despues > span { color: var(--acento); font-weight: 700; font-size: 1.2rem; }
+@media (max-width: 560px) { .antes-despues { grid-template-columns: 1fr; } .antes-despues > span { transform: rotate(90deg); justify-self: center; } }

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Aprendizaje de Machine Learning</title>
-<meta name="description" content="Lecciones interactivas de machine learning para las ciencias sociales y la gestión pública: del problema a la fórmula.">
-<meta property="og:title" content="Aprendizaje de Machine Learning">
-<meta property="og:description" content="Lecciones interactivas de machine learning para las ciencias sociales y la gestión pública: del problema a la fórmula.">
+<title>Aprendizaje de Machine Learning y econometría</title>
+<meta name="description" content="Lecciones interactivas de machine learning y econometría para las ciencias sociales y la gestión pública: del problema a la fórmula y del código a la idea.">
+<meta property="og:title" content="Aprendizaje de Machine Learning y econometría">
+<meta property="og:description" content="Lecciones interactivas de machine learning y econometría para las ciencias sociales y la gestión pública: del problema a la fórmula y del código a la idea.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M1 3 Q8 16 15 3' fill='none' stroke='%234338ca' stroke-width='2.2'/%3E%3Ccircle cx='11' cy='8.6' r='2' fill='%23d97706'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="recursos/estilos.css">
 <script>try{var t=localStorage.getItem('aprendizaje-ml-tema');if(t)document.documentElement.setAttribute('data-tema',t);}catch(e){}</script>
@@ -14,46 +14,47 @@
 <body>
 
 <!-- ============================================================
-     PROCESO 1: Portada del curso
-     Insumo:    nombre del curso, método de estudio
-     Resultado: una presentación breve y la promesa de cada lección
+     PROCESO 1: Portada
+     Insumo:    los dos cursos de la diplomatura y el método de estudio
+     Resultado: presentación, autoría visible y método
      ============================================================ -->
 <main class="contenedor">
   <div class="portada">
     <p class="portada__etiqueta">Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública · PUCP 2026</p>
-    <h1>Aprendizaje de Machine Learning</h1>
-    <p class="portada__sub">Lecciones interactivas del curso «Introducción a Machine Learning para Ciencias Sociales». Cada lección parte de un problema real y llega, al final, a la fórmula de la clase.</p>
+    <h1>Aprendizaje de Machine Learning y econometría</h1>
+    <p class="portada__sub">Lecciones interactivas de dos cursos de la diplomatura. Cada lección parte de un problema real, explica el código de la clase línea por línea y llega, al final, a la fórmula.</p>
     <div class="portada__datos">
-      <span>Prof. Pavel Coronado Castellanos</span>
+      <span>Machine Learning: prof. Pavel Coronado Castellanos</span>
+      <span>Econometría: prof. Alfonso Rodríguez</span>
       <span>Notas de estudio de Diego Sime, con Claude Code</span>
     </div>
   </div>
 
   <aside class="caja caja--autoria" aria-labelledby="titulo-autoria">
     <p class="caja__titulo" id="titulo-autoria">Autoría y fuentes</p>
-    <p>Estas lecciones se basan en el material del <strong>prof. Pavel Coronado Castellanos</strong> para el curso «Introducción a Machine Learning para Ciencias Sociales» (Diplomatura en Ciencia de Datos para las Ciencias Sociales y la Gestión Pública, Facultad de Ciencias Sociales, PUCP, 2026): sus diapositivas, su manual <em>Machine Learning para las Ciencias Sociales</em> (Departamento de Economía, PUCP, 2026) y el trabajo del QLAB, PUCP. Asistente del curso: Anderson Águila.</p>
-    <p>Cada lección cita las lecturas del curso y la autoría original de cada ejemplo (Deisenroth, Faisal y Ong; James, Witten, Hastie, Tibshirani y Taylor; Breiman; Athey e Imbens; entre otros) en su sección «Créditos y autorías».</p>
-    <p>Texto, laboratorios y código: <strong>Diego Sime con Claude Code</strong>, como material de estudio. Los errores son nuestros, no del profesor ni de los autores citados. Las diapositivas y lecturas pertenecen a sus autores y no se reproducen aquí.</p>
+    <p><strong>Machine Learning.</strong> Las lecciones se basan en el material del <strong>prof. Pavel Coronado Castellanos</strong> para el curso «Introducción a Machine Learning para Ciencias Sociales» (Facultad de Ciencias Sociales, PUCP, 2026): sus diapositivas, los cuadernos de las prácticas dirigidas, su manual <em>Machine Learning para las Ciencias Sociales</em> (Departamento de Economía, PUCP, 2026) y el trabajo del QLAB. Asistente del curso: Anderson Águila.</p>
+    <p><strong>Econometría.</strong> Las lecciones se basan en el material del <strong>prof. Alfonso Rodríguez</strong> para el «Taller de Introducción a la Econometría Aplicada» (QLAB–PUCP, 2026): sus diapositivas, sus módulos y su archivo de Stata, y los estudios peruanos que la clase discute.</p>
+    <p>Cada lección cita las lecturas y la autoría original de cada ejemplo en su sección «Créditos y autorías». Texto, laboratorios y código: <strong>Diego Sime con Claude Code</strong>, como material de estudio. Los errores son nuestros. Las diapositivas, los cuadernos y las lecturas pertenecen a sus autores y no se reproducen aquí.</p>
   </aside>
 
   <aside class="caja caja--clase">
     <p class="caja__titulo">El método de estas lecciones</p>
     <ul>
-      <li><strong>Del problema a la fórmula.</strong> Primero una pregunta concreta (¿cómo elige ChatGPT su próxima palabra?), después la idea y al final la notación.</li>
-      <li><strong>Laboratorios.</strong> Gráficos que mueves con el mouse o con el dedo para ver el efecto de cada idea.</li>
-      <li><strong>Retos.</strong> Una pregunta antes de seguir. Si fallas, recibes una pista.</li>
-      <li><strong>Cajas «Recuerda»</strong> y una ficha final para imprimir.</li>
-      <li><strong>Cada símbolo, explicado:</strong> cómo se lee y qué significa, para quien no viene de las ciencias exactas.</li>
+      <li><strong>Del problema a la fórmula.</strong> Primero una pregunta concreta, después la idea y al final la notación.</li>
+      <li><strong>Del código a la idea.</strong> Cada proceso con su insumo y su resultado; cada línea con lo que cambia en los datos y su equivalente en Excel.</li>
+      <li><strong>Laboratorios y retos.</strong> Gráficos que mueves con el mouse o con el dedo, y preguntas con pistas antes de seguir.</li>
+      <li><strong>Cajas «Recuerda»</strong>, una ficha final para imprimir y cada símbolo explicado: cómo se lee y qué significa.</li>
     </ul>
   </aside>
 
 <!-- ============================================================
-     PROCESO 2: Lecciones
-     Insumo:    el cronograma del sílabo
+     PROCESO 2: Lecciones por curso
+     Insumo:    el cronograma de cada sílabo
      Resultado: una tarjeta por lección; las listas llevan enlace
      Para agregar una lección: copia un <li class="leccion"> y cambia sus datos.
      ============================================================ -->
-  <h2 style="margin-top:1.6em">Lecciones</h2>
+  <h2 style="margin-top:1.6em" id="ml">Machine Learning</h2>
+  <p class="suave">«Introducción a Machine Learning para Ciencias Sociales» · prof. Pavel Coronado Castellanos</p>
   <ol class="lecciones">
     <li class="leccion leccion--lista">
       <div class="leccion__fecha"><b>Lección 1</b>22 de noviembre</div>
@@ -62,48 +63,88 @@
         <p>Medir el error, bajarlo con el descenso de gradiente y razonar con probabilidades. Repaso de cálculo, optimización y probabilidad (diapositivas ML1). 14 laboratorios y 16 retos.</p>
       </div>
     </li>
-    <li class="leccion">
-      <div class="leccion__fecha"><b>Lección 2</b>25 y 28 de noviembre</div>
+    <li class="leccion leccion--lista">
+      <div class="leccion__fecha"><b>Lección 2</b>25 de noviembre</div>
       <div>
-        <h3>Modelos lineales y sobreajuste <span class="estado estado--pronto">Próximamente</span></h3>
-        <p>Capacidad de un modelo, subajuste y sobreajuste, regularización y validación cruzada. Práctica en Python con el descenso de gradiente.</p>
+        <h3><a href="leccion-02.html">Del cuaderno al modelo</a> <span class="estado estado--lista">Lista</span></h3>
+        <p>Práctica dirigida 1: el descenso de gradiente en Python, la limpieza de datos y los primeros modelos de clasificación y regresión, cada línea con su fórmula y su equivalente en Excel. 6 laboratorios y 9 retos.</p>
       </div>
     </li>
     <li class="leccion">
-      <div class="leccion__fecha"><b>Lección 3</b>29 de noviembre</div>
+      <div class="leccion__fecha"><b>Lección 3</b>28 de noviembre</div>
+      <div>
+        <h3>Modelos lineales y sobreajuste <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Capacidad de un modelo, subajuste y sobreajuste, regularización.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Lección 4</b>29 de noviembre</div>
       <div>
         <h3>Métodos de remuestreo <span class="estado estado--pronto">Próximamente</span></h3>
         <p>Validación cruzada y <em>bootstrap</em>.</p>
       </div>
     </li>
     <li class="leccion">
-      <div class="leccion__fecha"><b>Lección 4</b>2 al 6 de diciembre</div>
+      <div class="leccion__fecha"><b>Lección 5</b>2 al 6 de diciembre</div>
       <div>
         <h3>Regresiones Ridge y Lasso <span class="estado estado--pronto">Próximamente</span></h3>
         <p>Regularización: cómo castigar los parámetros grandes para predecir mejor.</p>
       </div>
     </li>
     <li class="leccion">
-      <div class="leccion__fecha"><b>Lección 5</b>Diciembre</div>
+      <div class="leccion__fecha"><b>Lección 6</b>Diciembre</div>
       <div>
         <h3>Árboles, <em>bagging</em> y <em>boosting</em> <span class="estado estado--pronto">Próximamente</span></h3>
         <p>Modelos no lineales para clasificar y predecir.</p>
       </div>
     </li>
     <li class="leccion">
-      <div class="leccion__fecha"><b>Lección 6</b>Diciembre</div>
+      <div class="leccion__fecha"><b>Lección 7</b>Diciembre</div>
       <div>
         <h3>Redes neuronales y aprendizaje no supervisado <span class="estado estado--pronto">Próximamente</span></h3>
         <p>Redes multicapa, convolucionales y recurrentes; K-means y PCA.</p>
       </div>
     </li>
   </ol>
-  <p class="nota-pie">Fechas según el cronograma del sílabo. Pueden cambiar.</p>
+
+  <h2 style="margin-top:1.6em" id="econometria">Econometría</h2>
+  <p class="suave">«Taller de Introducción a la Econometría Aplicada» · prof. Alfonso Rodríguez · jueves de 7 a 10 p. m.</p>
+  <ol class="lecciones">
+    <li class="leccion leccion--lista">
+      <div class="leccion__fecha"><b>Clase 1</b>26 de noviembre</div>
+      <div>
+        <h3><a href="econometria-01.html">De una pregunta a una estimación con incertidumbre</a> <span class="estado estado--lista">Lista</span></h3>
+        <p id="eco1-resumen">Causalidad con tres estudios peruanos (Barrio Seguro, retornos a la educación y SIS), muestras, error estándar, intervalos de confianza y pruebas de hipótesis, y el ejercicio de la ENAHO 2023 en Stata, traducido a Python y a Excel. 7 laboratorios y 11 retos.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Clase 2</b>Jueves siguiente</div>
+      <div>
+        <h3>Estadística descriptiva y preparación de datos <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Explorar y preparar una base de datos peruana en Stata.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Clase 3</b>Por confirmar</div>
+      <div>
+        <h3>Regresión lineal simple y múltiple <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Estimación e interpretación de coeficientes.</p>
+      </div>
+    </li>
+    <li class="leccion">
+      <div class="leccion__fecha"><b>Clase 4</b>Por confirmar</div>
+      <div>
+        <h3>Aplicación práctica con datos peruanos <span class="estado estado--pronto">Próximamente</span></h3>
+        <p>Un análisis sencillo y reproducible, de la pregunta a los resultados.</p>
+      </div>
+    </li>
+  </ol>
+  <p class="nota-pie">Fechas según el cronograma de cada sílabo. Pueden cambiar.</p>
 </main>
 
 <footer class="pie">
   <div class="contenedor">
-    <p>Material de estudio basado en las clases del <strong>prof. Pavel Coronado Castellanos</strong> (PUCP, 2026). Elaborado por Diego Sime con Claude Code. Las diapositivas y lecturas pertenecen a sus autores; aquí solo se citan. Texto en lenguaje simple, según el estándar ASD-STE100 adaptado al español.</p>
+    <p>Material de estudio basado en las clases del <strong>prof. Pavel Coronado Castellanos</strong> y del <strong>prof. Alfonso Rodríguez</strong> (PUCP · QLAB, 2026). Elaborado por Diego Sime con Claude Code. Las diapositivas, los cuadernos y las lecturas pertenecen a sus autores; aquí solo se citan. Texto en lenguaje simple, según el estándar ASD-STE100 adaptado al español.</p>
     <p><a href="https://diegosimemirror.github.io/">Portafolio de Diego Sime</a> · <a href="https://github.com/diegosimemirror/aprendizaje_ML">Código en GitHub</a></p>
   </div>
 </footer>
